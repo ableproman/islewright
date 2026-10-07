@@ -6980,7 +6980,7 @@ function drawNpc(n){
   if(n.inside||n.hid)return; const z=cam.z, sp=playerSprite(n), sx=w2sx(n.x*TS), sy=w2sy(n.y*TS);
   if(n.sleeping){ drawSleepPose(sx,sy,z,n,false); return; }
   X.fillStyle='rgba(0,0,0,.28)'; X.fillRect(sx-4*z,sy-z,8*z,z); X.fillRect(sx-3*z,sy-2*z,6*z,z); X.fillRect(sx-3*z,sy,6*z,z);
-  X.drawImage(sp.cv,sx-PCX*z,sy-PCY*z-((n.sitB&&n.st!=='walk'&&!n.moving)?3*z:0),PCW*z,PCH*z); waterFx(n,sx,sy,z);
+  if(n.sitB&&n.st!=='walk'&&!n.moving)drawSeated(n,sx,sy,z); else X.drawImage(sp.cv,sx-PCX*z,sy-PCY*z,PCW*z,PCH*z); waterFx(n,sx,sy,z);
   if(n.bf>.12){ X.fillStyle='rgba(140,14,14,'+Math.min(.9,.3+n.bf*.65)+')'; X.fillRect(sx-3*z,sy-2*z,2*z,2*z); X.fillRect(sx+1*z,sy-2*z,2*z,2*z); }
 }
 
@@ -7308,15 +7308,23 @@ function drawSleepPose(sx,sy,z,P,inside){      // lying on the back: bedroll and
   for(let k=0;k<3;k++){ const ph=((T_*.45+k/3)%1), q=Math.max(1,R((1+ph*1.3)*z)), zx=R(sx-12*z-ph*5*z), zy=R(sy-13*z-ph*13*z); X.globalAlpha=(1-ph)*.9; X.fillStyle='#dfe6f5'; X.fillRect(zx,zy,3*q,q); X.fillRect(zx+q*2-q,zy+q,q,q); X.fillRect(zx,zy+2*q,3*q,q); }
   X.globalAlpha=1;
 }
+function drawSeated(who,sx,sy,z){                                    // sat down: the upper body as drawn, the legs bent at the knee instead of stretched out
+  const sp=playerSprite({dir:0,moving:false,ph:0,idleT:who.idleT||0,look:who.look}), CUT=21, lk=who.look||{}, pc=hx(lk.pants!==undefined?lk.pants:0x3a4a6a), sc='#2a1e16', top=sy-PCY*z-z;
+  X.drawImage(sp.cv,0,0,PCW,CUT,sx-PCX*z,top,PCW*z,CUT*z);
+  const hy=top+CUT*z;                                                                                                   // hips
+  X.fillStyle=pc; X.fillRect(sx-4*z,hy,3*z,3*z); X.fillRect(sx+1*z,hy,3*z,3*z);                                       // thighs towards you
+  X.fillStyle='rgba(0,0,0,.22)'; X.fillRect(sx-4*z,hy+2*z,3*z,z); X.fillRect(sx+1*z,hy+2*z,3*z,z);
+  X.fillStyle=pc; X.fillRect(sx-4*z,hy+3*z,3*z,2*z); X.fillRect(sx+1*z,hy+3*z,3*z,2*z);                                // lower legs hang down
+  X.fillStyle=sc; X.fillRect(sx-4*z,hy+5*z,3*z,2*z); X.fillRect(sx+1*z,hy+5*z,3*z,2*z);                               // shoes
+}
 function drawPlayer(P){
   if(G.sleep){ drawSleepPose(w2sx(P.x*TS),w2sy(P.y*TS),cam.z,P,false); return; }
   const z=cam.z, sp=playerSprite(P), sx=w2sx(P.x*TS), sy=w2sy(P.y*TS);
   X.fillStyle='rgba(0,0,0,.28)'; X.fillRect(sx-4*z,sy-z,8*z,z); X.fillRect(sx-3*z,sy-2*z,6*z,z); X.fillRect(sx-3*z,sy,6*z,z);
   let ox=0,oy=0; if(P.swing>0){ const k=axePose(P), v=DIRVEC[P.dir]; ox=Math.round(v[0]*k.lean*.8*z); oy=Math.round(v[1]*k.lean*.5*z+(k.p>.46&&k.p<.72?z*.7:0)); }
   if(P.carry){ const cb=(G.bodies||[]).find(x=>x.id===P.carry), lf=cb&&cb.lift!==undefined?cb.lift:1; oy+=Math.round(z*(1+(1-lf)*2.5)); }       // bending under the weight, deeper while lifting
-  if(P.sitB)oy-=3*z;                                                    // seated on a bench
   if(P.swing>0)drawAxeSwing(P,sx,sy,true);
-  X.drawImage(sp.cv,sx-PCX*z+ox,sy-PCY*z+oy,PCW*z,PCH*z);
+  if(P.sitB)drawSeated(P,sx,sy,z); else X.drawImage(sp.cv,sx-PCX*z+ox,sy-PCY*z+oy,PCW*z,PCH*z);
   if(P.swing>0)drawAxeSwing(P,sx+ox,sy+oy,false);
   if(P.bf>.12){ X.fillStyle='rgba(140,14,14,'+Math.min(.9,.3+P.bf*.65)+')'; X.fillRect(sx-3*z,sy-2*z,2*z,2*z); X.fillRect(sx+1*z,sy-2*z,2*z,2*z); }
   if(P.wade){ X.fillStyle='rgba(70,160,190,.55)'; X.fillRect(sx-5*z,sy-3*z,10*z,3*z); X.fillStyle='rgba(225,245,248,.7)'; const w=Math.floor(T_*5)%2; X.fillRect(sx-(5+w)*z,sy-3*z,(10+w*2)*z,z); }
