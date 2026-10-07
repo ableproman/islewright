@@ -2726,7 +2726,7 @@ function serialize(){
   const P=G.pl; flushVillageMem();
   return {ver:3,seed:G.seed,sname:G.seedName||'',name:G.name,day:G.day,tod:G.tod,dn:G.dn,whrs:G.whrs,start:G.start,removed:[...G.removed],planted:[...G.planted],picked:[...G.picked],pcnt:[...G.pcnt],journal:G.journal,vm:[...G.vmem].filter(([k,v])=>v.mem.met>0||v.mem.op||v.rumor||v.life),
     pl:{x:P.x,y:P.y,dir:P.dir,hp:P.hp,hc:P.hc,st:P.st,sc:P.sc,food:P.food,cash:P.cash,cl:P.cl},inv:G.inv.map(sl=>sl?[sl.id,sl.n]:null),sel:G.sel,pk:G.packLvl|0,camps:G.camps.map(c=>[c.x,c.y,Math.round(c.fuel),c.id]),cid:G.cid,drops:G.drops.map(d=>[d.x,d.y,d.id,d.n]),
-    cam:{x:cam.x,y:cam.y,z:cam.tz},wd:G.wand?G.wand.map(wSave):undefined,wel:G.wel?[...G.wel]:[],bd:G.bodies||[],bld:G.blood||[],gv:G.graves||[],bid:G.bid||0,wid:G.wid||0,vs:G.vst||{},gone:G.gone||[],guest:G.guest||[],ib:ibList(),sd:[...(G.sdone||[])],tn:[...(G.tdone||[])],td:[...(G.tdelay||[])],tp:[...(G.tpark||[])].map(([id,ws])=>[id,ws.map(wSave)])};
+    cam:{x:cam.x,y:cam.y,z:cam.tz},wd:G.wand?G.wand.map(wSave):undefined,wel:G.wel?[...G.wel]:[],bd:G.bodies||[],bld:G.blood||[],gv:G.graves||[],bid:G.bid||0,wid:G.wid||0,vs:G.vst||{},till:G.till||{},gone:G.gone||[],guest:G.guest||[],ib:ibList(),sd:[...(G.sdone||[])],tn:[...(G.tdone||[])],td:[...(G.tdelay||[])],tp:[...(G.tpark||[])].map(([id,ws])=>[id,ws.map(wSave)])};
 }
 function saveGame(quiet){
   if(!G||G.demo||!G.pl)return;
@@ -2737,7 +2737,7 @@ function loadGame(){
   chunks.clear(); SPR.clear(); PCS.clear();
   G=newWorld({seed:d.seed,size:1,mode:0,name:d.name}); freshCaches();
   Object.assign(G,{day:d.day,tod:d.tod,dn:d.dn,whrs:d.whrs||0,start:d.start,seedName:d.sname||'',removed:new Set(d.removed||[]),planted:new Map(d.planted||[]),picked:new Map(d.picked||[]),pcnt:new Map(d.pcnt||[]),vmem:new Map(d.vm||[]),journal:Array.isArray(d.journal)?d.journal:[]});
-  G.ibl=new Map(d.ib||[]); G.sdone=new Set(d.sd||[]); G.tdone=new Set(d.tn||[]); G.tdelay=new Map(d.td||[]); G.tpark=new Map((d.tp||[]).map(([id,ws])=>[id,ws.map(wLoad)])); G.wel=new Map(d.wel||[]); G.bodies=d.bd||[]; G.blood=d.bld||[]; G.graves=d.gv||[]; G.bid=d.bid||0; G.wand=d.wd?d.wd.map(wLoad):undefined; G.wid=d.wid||0; G.vst=d.vs||{}; G.gone=d.gone||[]; G.guest=d.guest||[];
+  G.till=d.till||{}; G.ibl=new Map(d.ib||[]); G.sdone=new Set(d.sd||[]); G.tdone=new Set(d.tn||[]); G.tdelay=new Map(d.td||[]); G.tpark=new Map((d.tp||[]).map(([id,ws])=>[id,ws.map(wLoad)])); G.wel=new Map(d.wel||[]); G.bodies=d.bd||[]; G.blood=d.bld||[]; G.graves=d.gv||[]; G.bid=d.bid||0; G.wand=d.wd?d.wd.map(wLoad):undefined; G.wid=d.wid||0; G.vst=d.vs||{}; G.gone=d.gone||[]; G.guest=d.guest||[];
   computeBounds();
   const P=G.pl=newPlayer(d.pl.x,d.pl.y); P.dir=d.pl.dir||0; for(const k of ['hp','hc','st','sc','food'])if(d.pl[k]!==undefined)P[k]=d.pl[k]; if(d.pl.cash!==undefined)P.cash=d.pl.cash;
   P.cl=clNorm(d.pl.cl); clRefresh(P);
@@ -5097,6 +5097,7 @@ function eatAtHome(V,n,h,blk){
 function doErrand(V,n,blk){
   const h=hhOf(V,n.home), sh=n.tgt&&n.tgt.shopId!==undefined?G.bmap.get(n.tgt.shopId):null;
   if(sh&&!bldOpen(sh).open){ n.shopMiss=1; return; }
+  if(sh){ const tl=tillOf(sh,V); tl.rec.pop=Math.min(2.5,tl.rec.pop+.07); tl.rec.c+=Math.round(h.mem*(5+hr01(n.id,G.dn,96)*6)); }
   h.pant+=Math.round(h.mem*2.8+hr01(n.id,G.dn,95)*3); h.lastShop=G.whrs; h.needShop=false; n.food=Math.min(100,n.food+(blk.k==='lunch'?20:0));
 }
 function onArrive(V,n){
@@ -5372,9 +5373,14 @@ function purseOf(n,V){                                                  // each 
   }
   return pu;
 }
-function tillOf(b,V){                                                   // a shop's takings: they build back up over a day and a half after a robbery
-  G.till=G.till||{}; const rec=G.till[b.id]||(G.till[b.id]={t:-999,r:0}), cap=Math.round((TILL[b.t]||120)*(.8+h2(b.id|0,7,G.seed|0)*.5)*(1+((V&&V.tier)||0)*.2));
-  return {cap,c:Math.round(cap*(rec.r?clamp(.15+(G.whrs-rec.t)/36,.15,1):1)),rec};
+function tillOf(b,V){                                                   // a shop's takings are real money: customers add to it, robbers empty it, and over time it drifts with how popular the shop is
+  V=V||(b.vid!=null?G.vil.get(b.vid):null); G.till=G.till||{};
+  const cap=Math.round((TILL[b.t]||120)*(.8+h2(b.id|0,7,G.seed|0)*.5)*(1+((V&&V.tier)||0)*.2)), rec=G.till[b.id]||(G.till[b.id]={});
+  if(rec.c==null){ rec.c=Math.round(cap*(.55+h2(b.id|0,11,G.seed|0)*.35)); rec.t=G.whrs; rec.pop=1; }
+  if(rec.pop==null)rec.pop=1;
+  const dt=clamp(G.whrs-rec.t,0,336); if(dt>0){ rec.t=G.whrs; rec.pop+=(1-rec.pop)*(1-Math.pow(.5,dt/72));                  // popularity fades back to normal unless people keep coming
+    const target=cap*clamp(.25+rec.pop*.55,.1,1.7); rec.c=Math.round(rec.c+(target-rec.c)*(1-Math.pow(.5,dt/30))); }
+  rec.c=Math.max(0,rec.c); return {cap,c:rec.c,rec};
 }
 function robNearV(P){ for(const V of G.vlist){ if(V.active&&Math.hypot(V.cx-P.x,V.cy-P.y)<V.L+40)return V; } return null; }
 function robChance(n,w,extra){                                          // the chance they hand it over: most people comply, a smaller share refuse; a weapon helps, bravery and temper hurt
@@ -5430,7 +5436,7 @@ function robPerson(n,V){
   if(ok){
     let stash=0; if(t.ho<=3&&pu.c>20&&Math.random()<.6){ stash=Math.round(pu.c*.35); pu.c-=stash; }                       // the dishonest hide a little of it
     const res=robTake(pu); pu.c=stash; pu.r=1; pu.t=G.whrs; let amt=res.amt;
-    if(box&&box.c>0){ amt+=box.c; P.cash+=box.c; box.rec.r=1; box.rec.t=G.whrs; }
+    if(box&&box.c>0){ amt+=box.c; P.cash+=box.c; box.rec.c=0; box.rec.pop=Math.max(.2,box.rec.pop-.3); }
     sfx.coin&&sfx.coin(); toast('ROBBED '+n.name+(law?' (OFFICER)':'')+'  +'+fmtM(amt)+(res.got.length?'  '+res.got.join(', '):''),AMB,true);
     n.mem.op=Math.max(-100,n.mem.op-40); n.angry=60; robEnd(robSay(n,'ok'));
     if(a){ robFlee(a); robAlarm(IN,a); }
@@ -5450,7 +5456,7 @@ function robShop(n,V){
   n.mem.met=Math.max(1,n.mem.met||0); n.mem.theft=(n.mem.theft||0)+1; n.talk=false; panicWake(IN,IN.q.x,IN.q.y,12);
   IN.heat=(IN.heat||0)+2.5; IN.looted=(IN.looted||0)+1; IN.loot=1; IN.sig=IN.sig||outfitSig(P);
   if(ok){
-    let amt=till.c; P.cash+=amt; till.rec.r=1; till.rec.t=G.whrs; const got=[];
+    let amt=till.c; P.cash+=amt; till.rec.c=0; till.rec.pop=Math.max(.2,till.rec.pop-.3); const got=[];
     const pick=left.map(k=>({k,s:itemVal(k)*(.4+Math.random()*1.2)})).sort((x,y)=>y.s-x.s), nk=1+Math.floor(Math.random()*3)+(till.cap>250?1:0);
     for(const e of pick.slice(0,nk)){ let take=Math.min(q[e.k],1+Math.floor(Math.random()*3)); while(take>0&&!canFit(e.k,take))take--; if(take>0){ addItem(e.k,take); q[e.k]-=take; got.push(take+' '+ITEMS[e.k].n); (G.stolen||(G.stolen=[])).push({id:e.k,n:take}); } }
     const res=robTake(pu); pu.r=1; pu.t=G.whrs; amt+=res.amt; for(const g of res.got)got.push(g);
@@ -5542,7 +5548,32 @@ function bodyArrive(V,n,bj){
     else{ n.busy={k:'dig',bid:b.id,t:7+Math.random()*4,x:n.x,y:n.y}; } }
 }
 function bodyStage(b){ const a=G.whrs-b.t0; return a<4?0:a<14?1:a<40?2:3; }
+/* ---- something unusual: people notice it, grow wary, then talk, then the law hears of it ---- */
+function oddOf(P){
+  if(P.carry)return {k:'body',s:3,t:[1.5,4,8]};
+  if(P.bf>.15)return {k:'assault',s:2,t:[2.5,6,11]};
+  const id=heldId(), w=id&&WEAP[id]; if(w&&w.l&&!G.stand)return {k:'assault',s:1,t:[3,8,15]};
+  return null;
+}
+function oddScan(dt){
+  const P=G.pl; if(!P||G.in||G.dead||G.sleep||G.tr)return; P._oddA=(P._oddA||0)+dt; if(P._oddA<.25)return; const st=P._oddA; P._oddA=0;
+  const V=robNearV(P), od=oddOf(P); if(!V){ return; }
+  const rg=Math.max(8,sightRange(P)); let hot=0;
+  for(const n of V.npcs){
+    if(n.inside||n.hid||n.sleeping||n.st==='inside'||n.age<10){ continue; }
+    if(!od||!npcSees(n,P,rg)){ n.odT=Math.max(0,(n.odT||0)-st*.5); if(!n.odT)n.odL=0; continue; }
+    if(n.job==='guard'&&P.carry){ n.odT=(n.odT||0)+st*2; } else n.odT=(n.odT||0)+st*(1+(n.tr&&n.tr.br<4?.3:0));
+    const lv=n.odT>=od.t[2]?3:n.odT>=od.t[1]?2:n.odT>=od.t[0]?1:0, was=n.odL||0; if(lv<=was)continue; n.odL=lv;
+    n.dirLock=2; n.dir=dirFrom(P.x-n.x,P.y-n.y); n.mem.met=Math.max(1,n.mem.met||0);
+    if(lv===1){ n.angry=Math.max(n.angry||0,6); }                                                        // they stop and stare
+    else if(lv===2){ n.cSig=outfitSig(P); n.cItem=heldId(); n.cLast=curPos(V); n.mem.op=Math.max(-100,n.mem.op-6); n.angry=Math.max(n.angry||0,14); hot++;   // they remember you and mutter to their neighbours
+      for(const m of V.npcs){ if(m!==n&&!m.inside&&!m.sleeping&&Math.hypot(m.x-n.x,m.y-n.y)<8)m.odT=Math.max(m.odT||0,od.t[0]*1.1); } }
+    else{ n.mem.op=Math.max(-100,n.mem.op-10); n.cSig=outfitSig(P); n.cItem=heldId(); n.cLast=curPos(V); witnessReact(V,n,od.s,od.k); hot++; }
+  }
+  if(hot&&T_-(G._oddToast||0)>10){ G._oddToast=T_; toast('PEOPLE ARE WATCHING YOU',RED,true); sfx.err(); }
+}
 function bodyTick(dt){
+  oddScan(dt);
   const P=G.pl, B=G.bodies||[], blood=G.blood||[];
   for(let i=B.length-1;i>=0;i--){ const b=B[i], age=G.whrs-b.t0;
     if(age>95){ B.splice(i,1); continue; }
@@ -7748,13 +7779,13 @@ function shopRows(S){
   return Object.keys(cnt).filter(id=>shopBuys(S.sp,id)).sort((a,c)=>ITEMS[a].n.localeCompare(ITEMS[c].n)).map(id=>({id,price:sellPrice(id,S.mult),q:cnt[id]}));
 }
 function maxQty(S,r){
-  const P=G.pl; if(S.tab===1)return S.w?Math.min(r.q,Math.floor(S.w.cash/r.price)):r.q; let m=Math.min(r.q,Math.floor(P.cash/r.price)); while(m>0&&!canFit(r.id,m))m--; return m;
+  const P=G.pl; if(S.tab===1)return S.w?Math.min(r.q,Math.floor(S.w.cash/r.price)):S.b?Math.min(r.q,Math.floor(tillOf(S.b).c/r.price)):r.q; let m=Math.min(r.q,Math.floor(P.cash/r.price)); while(m>0&&!canFit(r.id,m))m--; return m;
 }
 function shopDo(S,r,qty){
   const P=G.pl; if(qty<1)return; const tot=r.price*qty;
   if(S.tab===0){ if(P.cash<tot){ toast('NOT ENOUGH MONEY',RED); sfx.err(); return; } if(!canFit(r.id,qty)){ toast('PACK FULL',RED); sfx.err(); return; }
-    P.cash-=tot; addItem(r.id,qty); if(S.w){ const e=S.w.bag.find(x=>x[0]===r.id); if(e){ e[1]-=qty; if(e[1]<=0)S.w.bag.splice(S.w.bag.indexOf(e),1); } S.w.cash+=tot; } else{ const q=stockOf(S.b,S.sp); q[r.id]=Math.max(0,(q[r.id]||0)-qty); } sfx.coin(); toast('BOUGHT '+qty+' '+ITEMS[r.id].n+'  -'+fmtM(tot),AMB); }
-  else{ if(countItem(r.id)<qty)return; if(S.w&&S.w.cash<tot){ toast('THEY CANNOT AFFORD THAT',RED); sfx.err(); return; } takeItem(r.id,qty); P.cash+=tot; if(S.w){ S.w.cash-=tot; const e=S.w.bag.find(x=>x[0]===r.id); if(e)e[1]+=qty; else S.w.bag.push([r.id,qty]); } if(S.sp.sells.includes(r.id)){ const q=stockOf(S.b,S.sp); q[r.id]=Math.min(99,(q[r.id]||0)+qty); } sfx.coin(); toast('SOLD '+qty+' '+ITEMS[r.id].n+'  +'+fmtM(tot),GRN); }
+    P.cash-=tot; addItem(r.id,qty); if(S.w){ const e=S.w.bag.find(x=>x[0]===r.id); if(e){ e[1]-=qty; if(e[1]<=0)S.w.bag.splice(S.w.bag.indexOf(e),1); } S.w.cash+=tot; } else{ const q=stockOf(S.b,S.sp); q[r.id]=Math.max(0,(q[r.id]||0)-qty); } if(!S.w&&S.b){ const tl=tillOf(S.b); tl.rec.c+=tot; tl.rec.pop=Math.min(2.5,tl.rec.pop+.03); } sfx.coin(); toast('BOUGHT '+qty+' '+ITEMS[r.id].n+'  -'+fmtM(tot),AMB); }
+  else{ if(countItem(r.id)<qty)return; if(S.w&&S.w.cash<tot){ toast('THEY CANNOT AFFORD THAT',RED); sfx.err(); return; } if(!S.w&&S.b){ const tl=tillOf(S.b); if(tl.c<tot){ toast('THE TILL CANNOT COVER THAT',RED); sfx.err(); return; } tl.rec.c-=tot; } takeItem(r.id,qty); P.cash+=tot; if(S.w){ S.w.cash-=tot; const e=S.w.bag.find(x=>x[0]===r.id); if(e)e[1]+=qty; else S.w.bag.push([r.id,qty]); } if(S.sp.sells.includes(r.id)){ const q=stockOf(S.b,S.sp); q[r.id]=Math.min(99,(q[r.id]||0)+qty); } sfx.coin(); toast('SOLD '+qty+' '+ITEMS[r.id].n+'  +'+fmtM(tot),GRN); }
   S.qty=1;
 }
 function drawShop(){
