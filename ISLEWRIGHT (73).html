@@ -9924,7 +9924,8 @@ const WEAPLIST=[
   ['trident','TRIDENT','spear','#b8bcc4','#7a5230',25,.28,1.4,2.0,7,{ironingot:3,plank:2,cord:1}],
   ['ironspear','IRON SPEAR','spear','#c4c8d0','#7a5230',24,.24,1.4,2.0,6,{ironingot:2,branch:2,cord:1}]
 ];
-function wIcon(type,bl,hd){
+const WI_N={};
+function wIcon(type,bl,hd,k,ac){
   const g=Array.from({length:10},()=>Array(10).fill('.')), px=(x,y,c)=>{ if(x>=0&&x<10&&y>=0&&y<10)g[y][x]=c; };
   const line=(x0,y0,x1,y1,c)=>{ const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0)); for(let i=0;i<=n;i++)px(Math.round(x0+(x1-x0)*i/n),Math.round(y0+(y1-y0)*i/n),c); };
   switch(type){
@@ -9939,12 +9940,20 @@ function wIcon(type,bl,hd){
     case 'staff': line(0,9,9,0,'H'); line(1,9,9,1,'D'); break;
     case 'club': line(1,9,6,4,'H'); for(let y=1;y<5;y++)for(let x=5;x<9;x++)px(x,y,x+y>9?'H':'B'); px(7,1,'D'); break;
   }
-  return {r:g.map(r=>r.join('')),p:{B:bl,D:bShade(bl,.7),H:hd,G:'#c8a040'}};
+  const at=(x,y)=>x>=0&&x<10&&y>=0&&y<10?g[y][x]:'#', cells=c=>{ const o=[]; for(let y=0;y<10;y++)for(let x=0;x<10;x++)if(g[y][x]===c)o.push([x,y]); return o.sort((a,b)=>(a[0]-a[1])-(b[0]-b[1])); };
+  k=k|0; const B=cells('B'), Hh=cells('H');
+  if(k&1){ const q=Hh[0]; if(q&&at(q[0],q[1]+1)==='.')px(q[0],q[1]+1,'A'); else if(q)px(q[0]-1,q[1],'A'); }
+  if(k&2)B.forEach((q,i)=>{ if(i%2)px(q[0],q[1],'L'); });
+  if(k&4){ const q=Hh[Math.floor(Hh.length/2)]; if(q)for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]])if(at(q[0]+dx,q[1]+dy)==='.'){ px(q[0]+dx,q[1]+dy,'A'); break; } }
+  if(k&8){ const q=B[Math.floor(B.length/2)]; if(q)for(const [dx,dy] of [[0,1],[1,0],[0,-1],[-1,0]])if(at(q[0]+dx,q[1]+dy)==='.'){ px(q[0]+dx,q[1]+dy,'D'); break; } }
+  if(k&16&&B.length>2)px(B[B.length-1][0],B[B.length-1][1],'.');
+  if(k&32){ const q=B[1]; if(q)for(const [dx,dy] of [[-1,0],[0,-1],[1,0],[0,1]])if(at(q[0]+dx,q[1]+dy)==='.'){ px(q[0]+dx,q[1]+dy,'L'); break; } }
+  return {r:g.map(r=>r.join('')),p:{B:bl,D:bShade(bl,.7),L:bShade(bl,1.3),H:hd,G:'#c8a040',A:ac||'#c8a040'}};
 }
 (function(){
   for(const [id,nm,type,bl,hd,d,h,c,r,s,inp] of WEAPLIST){
     const metal=!!inp.ironingot; ITEMS[id]={n:nm,stack:1,d:(metal?'FORGED WEAPON. ':'CRUDE WEAPON. ')+'DAMAGE '+d+', REACH '+r+', SWING COST '+s+'.',src:metal?'CRAFT WITH A HAMMER AND IRON INGOTS':'CRAFT FROM STONE, WOOD AND CORD'};
-    WEAP[id]={d,h,c,r,s,l:1}; ICON[id]=wIcon(type,bl,hd); let v=0; for(const k in inp)v+=(ITEMS[k]?itemVal(k):4)*inp[k]; VALB[id]=Math.round(v*1.6)+6; CRAFTS.push(metal?{out:id,nm:1,inp,tool:'hammer'}:{out:id,nm:1,inp}); }
+    WEAP[id]={d,h,c,r,s,l:1}; const tk_=(WI_N[type]=(WI_N[type]||0)+1)-1; let hs=0; for(const ch of id)hs=(hs*31+ch.charCodeAt(0))|0; ICON[id]=wIcon(type,bl,hd,(tk_*13+1)&63,['#c8a040','#b8382c','#3a5aa8','#4f8a3f','#e0e0e8','#8a3aa8','#d8782a'][Math.abs(hs)%7]); let v=0; for(const k in inp)v+=(ITEMS[k]?itemVal(k):4)*inp[k]; VALB[id]=Math.round(v*1.6)+6; CRAFTS.push(metal?{out:id,nm:1,inp,tool:'hammer'}:{out:id,nm:1,inp}); }
 
   // sold where they are made, and the building trades
   const add=(shop,ids)=>{ const s=SHOPS[shop]; if(s)for(const i of ids)if(ITEMS[i]&&!s.sells.includes(i))s.sells.push(i); };
