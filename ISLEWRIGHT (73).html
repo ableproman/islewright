@@ -4324,7 +4324,7 @@ function buildVillage(site){
   // plaza: well or fountain, benches, lamps, flowers, market stalls
   if(tier===3){ const f=addB('fountain',cx-1,cy-2); mark(cx,cy-2); const st=addB('statue',cx+3,cy-3); }
   else{ addB('well',cx,cy-2); }
-  for(const [dx,dy,id] of [[-hw,-5,'lamp'],[hw,-5,'lamp'],[-hw,rw+2,'lamp'],[hw,rw+2,'lamp'],[-3,-4,'bench'],[3,-4,'bench'],[-4,rw+1,'bench'],[4,rw+1,'bench'],[-hw+1,-3,'flowerbed'],[hw-1,-3,'flowerbed']]){ if(!G.occ.has(tk(cx+dx,cy+dy)))addB(id,cx+dx,cy+dy,undefined); }
+  for(const [dx,dy,id] of [[-hw,-5,'lamp'],[hw,-5,'lamp'],[-hw,rw+2,'lamp'],[hw,rw+2,'lamp'],[-3,-4,'bench'],[3,-4,'bench'],[-4,rw+1,'bench'],[4,rw+1,'bench'],[-hw+1,-3,'flowerbed'],[hw-1,-3,'flowerbed']].concat(tier>=1&&hw>=5?[[-hw+1,1,'bench'],[hw-1,1,'bench'],[-hw+1,rw-1,'bench'],[hw-1,rw-1,'bench']]:[])){ if(!G.occ.has(tk(cx+dx,cy+dy)))addB(id,cx+dx,cy+dy,undefined); }
   const stalls=[0,2,4,6][tier]; for(let i=0;i<stalls;i++){ const side=i%2?1:-1, x=cx+side*(3+Math.floor(i/2)*3), y=cy-3; if(x-1<pz.x0||x+2>pz.x1)continue; if(G.occ.has(tk(x,y))||G.occ.has(tk(x+1,y)))continue; const b=addB(tier>=2&&i%3===0?'fishmarket':'market',x,y); V.doors.set(b.id,{x:x+1,y:y+1.4}); }
   for(let i=0;i<16;i++){ let px,py,t=0; do{ px=cx+.5+(rn()-.5)*(2*hw-3); py=cy-1+rn()*(rw+4); t++; }while(Math.abs(px-cx)<1.8&&Math.abs(py-(cy-1.5))<2.2&&t<8); V.plazaSpots.push({x:px,y:py}); }
   // civic building on the north side of the plaza
@@ -4585,7 +4585,8 @@ function streetBeat(V,n){                                           // where a s
   const far=opts.filter(o=>Math.hypot(o.x-n.x,o.y-n.y)>6&&walkableTile(Math.floor(o.x),Math.floor(o.y)));
   return far.length?far[Math.floor(Math.random()*far.length)]:null;
 }
-function npcGoTo(V,n,x,y,spd,chase){                                  // returns true when it had to path around something
+function npcGoTo(V,n,x,y,spd,chase){
+  n.sitB=0;                                  // returns true when it had to path around something
   let pts, heavy=false; if(lineClear(n.x,n.y,x,y))pts=[{x:n.x,y:n.y},{x,y}];
   else{ heavy=true; const m=tilePathPts({x:n.x,y:n.y},{x,y}); pts=m?[{x:n.x,y:n.y}].concat(m,[{x,y}]):null;
     if(!pts){ const g=V.nodes.length?graphPath(V,n.x,n.y,x,y):[]; pts=fixPath([{x:n.x,y:n.y}].concat(g.map(q=>({x:q.x,y:q.y})),[{x,y}])); } }
@@ -4600,6 +4601,7 @@ function unstick(V,n){                                               // stuck on
   n.path=[{x:n.x,y:n.y}].concat(m,[fin]); n.pi=1; n.moving=false; n.bestD=1e9; n.bestT=T_;
 }
 function routeTo(V,n,dest){
+  n.sitB=0;
   if(n._a&&G.in&&G.in.actors.indexOf(n._a)>=0&&n.inside===G.in.b.id){ const a=n._a; n.pend=dest; if(a.mode==='sleep'){ getUp(G.in,a); a.leave=0; } if(!a.leave){ a.leave=1; a.seatTo=null; a.go=null; if(a.mode==='sit'||a.mode==='keeper')a.mode='wander'; } return; }   // you are in the room: they walk to the door and leave through it
   const from=n.inside?doorOf(V,n.inside):{x:n.x,y:n.y};
   n.inside=null; n.hidden=false;
@@ -5034,6 +5036,7 @@ const asleepNow=(V,n)=>{ const b=curBlk(V,n); return b.k==='sleep'&&!(n.awakeUnt
 function doingFor(V,n,blk){
   blk=blk||curBlk(V,n); const pk=(a,s)=>a[Math.floor(G.tod*4+n.id+(s||0))%a.length], pn=blk.pn!==undefined?V.nid.get(blk.pn):null;
   if(n.ovr&&n.ovrB===slotId(blk)&&n.ovr.doing)return n.ovr.doing;
+  if(n.shopping&&n.shopping.slot===slotId(blk)&&G.whrs<n.shopping.until)return SHOPPING_TXT[(n.id+((G.tod*3)|0))%SHOPPING_TXT.length];
   if(n.sleeping)return 'SLEEPING ON THE STREET';
   switch(blk.k){
     case 'sleep': return n.homeless?'AWAKE ON THE COLD STREET':n.awakeUntil>G.whrs?'AWAKE AND ON EDGE':awakeClear(n)?sleepAwake(V,n,blk):'SLEEPING';
@@ -5065,6 +5068,8 @@ function doingFor(V,n,blk){
 function destForBlk(V,n,blk){
   if(n.ovr&&n.ovrB===slotId(blk))return n.ovr;
   const k=blk.k, r=hr01(n.id,G.dn*17+blk.i,91), r2=hr01(n.id,G.dn*17+blk.i,92), ps=V.plazaSpots, plazaAt=i=>{ const p=ps[Math.floor(i)%ps.length]; return {x:p.x,y:p.y,inside:null,k:'plaza'}; };
+  const benchSeat=()=>{ const bs=V._bn||(V._bn=V.B.filter(b=>b.t==='bench')); if(!bs.length)return null; const off=Math.floor(r*bs.length);              // two people to a bench, never more
+    for(let i=0;i<bs.length;i++){ const b=bs[(i+off)%bs.length], occ=V.npcs.filter(o=>o!==n&&(o.sitB===b.id||(o.tgt&&o.tgt.benchId===b.id))); if(occ.length<2){ const sl=occ.some(o=>o.sitSlot===0||(o.tgt&&o.tgt.slot===0))?1:0; return {x:b.x+.5+(sl?.22:-.22),y:b.y+1.12,inside:null,k:'bench',benchId:b.id,slot:sl}; } } return null; };
   const near=(b,ox,oy)=>{ const d=doorOf(V,b.id); return {x:d.x+ox,y:d.y+oy,inside:null,k:'door'}; };
   if(n.homeless){
     if(k==='sleep'||k==='getup')return {x:n.street.x,y:n.street.y,inside:null,k:'street'};
@@ -5073,8 +5078,8 @@ function destForBlk(V,n,blk){
     return plazaAt(blk.sp!==undefined?blk.sp:r*997);
   }
   const hd=doorOf(V,n.home), home=()=>({x:hd.x,y:hd.y,inside:n.home,k:'home'}), yard=()=>({x:hd.x+(r-.5)*4,y:hd.y+.55+r2*1.1,inside:null,k:'yard'});
-  const tav=pickBuilding(V,['tavern','inn']), tavD=()=>{ if(tav&&!bldFull(V,tav.id,n,7)){ const td=doorOf(V,tav.id); return {x:td.x,y:td.y,inside:tav.id,k:'tavern'}; } return plazaAt(r*997); };
-  const shopD=()=>{ const sh=blk.shop!==undefined?G.bmap.get(blk.shop):null; if(!sh)return null; if(BT[sh.t].k!=='market'&&bldFull(V,sh.id,n))return null;       // a shop only holds so many people at once
+  const tav=pickBuilding(V,['tavern','inn']), tavD=()=>{ if(tav&&!bldFull(V,tav.id,n,7)){ const td=doorOf(V,tav.id); return {x:td.x,y:td.y,inside:tav.id,k:'tavern'}; } return home(); };               // a full tavern sends them home, not to stand about in the plaza
+  const shopD=()=>{ const sh=blk.shop!==undefined?G.bmap.get(blk.shop):null; if(!sh)return null; if(n.noShop===slotId(blk))return null; if(BT[sh.t].k!=='market'&&V.npcs.filter(o=>o!==n&&(o.inside===sh.id||(o.tgt&&o.tgt.inside===sh.id))).length>=shopCapOf(sh)+2)return null;       // a shop only holds so many people at once
  const d=doorOf(V,sh.id); return {x:d.x,y:d.y,inside:BT[sh.t].d==='none'||BT[sh.t].k==='market'?null:sh.id,k:'shop',shopId:sh.id}; };
   switch(k){
     case 'sleep': case 'getup': case 'bfast': case 'prep': case 'wfh': case 'relax': case 'dinner':
@@ -5098,13 +5103,14 @@ function destForBlk(V,n,blk){
       if(blk.where==='law'&&V.lawB){ const wd=doorOf(V,V.lawB.id); return {x:wd.x,y:wd.y,inside:V.lawB.id,k:'work'}; }
       if(blk.where==='home')return home();
       if(blk.where==='tavern')return tavD();
-      if(blk.where==='shop'){ const d=shopD(); if(d)return d; }
+      if(blk.where==='shop'){ const d=shopD(); if(d)return d; if(n.work){ const wd=doorOf(V,n.work); return {x:wd.x,y:wd.y,inside:n.work,k:'work'}; } return home(); }          // no room at the shop: back to work or home
       if(blk.where==='work'&&n.work){ const wd=doorOf(V,n.work); return {x:wd.x,y:wd.y,inside:n.work,k:'work'}; }
+      if(blk.where==='bench')return benchSeat()||home();
       return plazaAt(r*997);
     case 'errand': { const d=shopD(); if(d)return d; if(V.fieldSpots.length){ const fs=V.fieldSpots[Math.floor(r*V.fieldSpots.length)]; return {x:fs.x+(r-.5)*1.2,y:fs.y+.5,inside:null,k:'forage'}; } return yard(); }
     case 'tavern': return tavD();
     case 'church': { const c=hasChurch(V); if(c){ const d=doorOf(V,c.id); return {x:d.x,y:d.y,inside:c.id,k:'church'}; } return plazaAt(r*997); }
-    case 'social': case 'jobhunt': return plazaAt(r*997);
+    case 'social': case 'jobhunt': { const bs=r2<.5?benchSeat():null; return bs||plazaAt(r*997); }
     case 'meet': case 'visit': case 'host': {
       const mp=blk.mp, side=n.id<blk.pn?-.55:.55, host=mp.host>=0?V.nid.get(mp.host):null;
       if(mp.place==='tavern')return tavD();
@@ -5137,13 +5143,55 @@ function eatAtHome(V,n,h,blk){
   if(alt&&G.tod>5.5&&G.tod<23.5){ const d=doorOf(V,alt.id); n.ovrB=slotId(blk); n.ovr={x:d.x,y:d.y,inside:BT[alt.t].k==='market'?null:alt.id,k:'eatout',doing:'EATING OUT - THE PANTRY IS EMPTY'}; routeTo(V,n,n.ovr); }
   else{ n.hungry=1; n.food=Math.max(0,n.food-5); }
 }
+/* ---- weighing it up: any choice a person makes can be ranked with this (need against cost, taste and a little mood), so it can be reused for more than shopping ---- */
+function weigh(n,opts){
+  const t=n.tr||{}, thrift=.5+(10-(t.hu||5))*.04+(t.pi||5)*.02;
+  return opts.map(o=>Object.assign({},o,{u:(o.need||0)-(o.cost||0)*thrift+(o.pref||0)+Math.random()*.25})).sort((a,b)=>b.u-a.u);
+}
+const shopCapOf=b=>clamp(Math.round(b.w*b.h*1.4),3,12);
+const SHOPQ_TXT=['WAITING FOR THE {S} TO CLEAR','WAITING THEIR TURN OUTSIDE THE {S}','PEERING IN AT A BUSY {S}','CHECKING IF THE {S} HAS QUIETENED','EYEING THE QUEUE AT THE {S}','WAITING OUTSIDE THE {S}, BASKET IN HAND'];
+const SHOPQ_WALK=['TAKING A WALK UNTIL THE {S} QUIETENS','STRETCHING THEIR LEGS WHILE THE {S} IS BUSY','WANDERING THE PLAZA, WILL TRY THE {S} AGAIN'];
+const SHOPPING_TXT=['WEIGHING UP WHAT TO BUY','COMPARING PRICES','CHECKING THE LIST FOR HOME','WORKING OUT WHAT THE FAMILY NEEDS','LOOKING OVER THE SHELVES','DECIDING WHETHER IT IS WORTH IT'];
+function shopBusy(V,n){                                                // true when the shop is full: they queue outside instead of crowding in
+  const t=n.tgt; if(!t||!t.inside||t.k!=='shop')return false; const b=G.bmap.get(t.inside); if(!b)return false;
+  if(V.npcs.filter(o=>o!==n&&o.inside===b.id).length<shopCapOf(b)){ n.shopQ=null; return false; }
+  const nm=BT[b.t].n; if(!n.shopQ)n.shopQ={id:b.id,end:T_+16+Math.random()*14,tries:0,walking:0};
+  n.st='idle'; n.moving=false; n.path=null; n.wait=4; n.arrB=null; n.ovrB=slotId(n.blk||curBlk(V,n)); n.ovr={x:n.x,y:n.y,inside:null,k:'queue',doing:SHOPQ_TXT[(n.id+n.shopQ.tries)%SHOPQ_TXT.length].replace('{S}',nm)}; return true;
+}
+function shopQTick(V,n){
+  const q=n.shopQ; if(!q||n.st==='walk'&&!q.walking)return; const b=G.bmap.get(q.id); if(!b){ n.shopQ=null; return; }
+  if(q.walking){ if(n.st==='walk'||T_<q.walkEnd)return; q.walking=0; q.end=T_+14+Math.random()*10; n.ovr=null; n.slot=-9; return; }       // walk over: look at the shop again
+  if(V.npcs.filter(o=>o!==n&&o.inside===b.id).length<shopCapOf(b)){ n.shopQ=null; n.ovr=null; n.path=[{x:n.x,y:n.y},{x:n.x+.02,y:n.y}]; n.pi=1; n.st='walk'; n.moving=true; return; }   // somebody came out: in they go
+  if(T_<q.end)return;
+  if(q.tries<1&&V.plazaSpots&&V.plazaSpots.length){ const p=V.plazaSpots[Math.floor(Math.random()*V.plazaSpots.length)], d={x:p.x,y:p.y,inside:null,k:'walk',doing:SHOPQ_WALK[n.id%SHOPQ_WALK.length].replace('{S}',BT[b.t].n)}; q.tries++; q.walking=1; q.walkEnd=T_+22+Math.random()*18; n.ovrB=slotId(n.blk); n.ovr=d; routeTo(V,n,d); return; }
+  n.noShop=slotId(n.blk); n.shopQ=null; n.ovr=null; n.slot=-9;           // still full: give it up for now, go back to work or home
+}
+function shopPlan(V,n,sh,sp,units,personal){                           // the invisible shop menu: they rank what is on the shelves against hunger, the pantry at home and what it costs
+  const q=stockOf(sh,sp), t=n.tr||{}, h=hhOf(V,n.home), hungry=clamp((100-(n.food==null?60:n.food))/100,0,1), pu=purseOf(n,V), per=h.pant/Math.max(1,h.mem);
+  const opts=sp.sells.filter(id=>ITEMS[id]&&(q[id]||0)>0).map(id=>{ const food=(ITEMS[id].use&&ITEMS[id].use.f)||0, price=buyPrice(id,1);
+    return {k:id,price,need:(food>0?(hungry*1.2+(per<3?.8:.3)):.1)*(1+food/10),cost:price/(20+Math.max(10,pu.c||30)),pref:(hr01(n.id,id.length*7+(G.dn|0),98)-.5)*(t.cu||5)*.12}; });
+  const ranked=weigh(n,opts), kinds=Math.max(1,Math.min(ranked.length,Math.ceil(units/2))), basket=[]; let spend=0;
+  for(let i=0;i<kinds&&i<ranked.length;i++){ const o=ranked[i], c=Math.max(1,Math.min(q[o.k]||1,Math.ceil(units/kinds))); basket.push({id:o.k,n:c}); spend+=o.price*c; }
+  const dwell=(2.5+Math.min(8,opts.length)*.35+basket.length*1.2+Math.random()*2)/60;                   // game hours: a few minutes of looking, weighing and paying
+  return {basket,spend,dwell};
+}
+function finishShopping(V,n){
+  const s=n.shopping; n.shopping=null; if(!s)return; const sh=G.bmap.get(s.shop), h=hhOf(V,n.home);
+  if(sh){ const sp=shopOf(sh), q=sp?stockOf(sh,sp):null, tl=tillOf(sh,V); for(const e of s.plan.basket)if(q&&q[e.id]!==undefined)q[e.id]=Math.max(0,q[e.id]-e.n); tl.rec.c+=s.plan.spend; tl.rec.pop=Math.min(2.5,tl.rec.pop+.07); }
+  h.pant+=s.units; n.hungry=0; if(!s.personal){ h.lastShop=G.whrs; h.needShop=false; }
+  n.food=Math.min(100,(n.food||0)+(s.lunch?(s.personal?35:20):(s.personal?8:0)));
+}
+function shopTick(V,n){
+  const s=n.shopping; if(!s)return; const sh=G.bmap.get(s.shop), inRoom=sh&&BT[sh.t].k!=='market'&&BT[sh.t].d!=='none';
+  if(G.whrs>=s.until||(inRoom&&n.inside!==s.shop)||n.st==='walk')finishShopping(V,n);
+}
 function doErrand(V,n,blk){
   const h=hhOf(V,n.home), sh=n.tgt&&n.tgt.shopId!==undefined?G.bmap.get(n.tgt.shopId):null;
   if(sh&&!bldOpen(sh).open){ n.shopMiss=1; return; }
   if(blk.bank){ if(sh)bankVisit(V,n,sh); return; }
-  if(sh){ const tl=tillOf(sh,V); tl.rec.pop=Math.min(2.5,tl.rec.pop+.07); tl.rec.c+=(blk.personal||blk.k==='lunch'&&h.shopper!==n.id)?Math.round(4+hr01(n.id,G.dn,96)*6):Math.round(h.mem*(5+hr01(n.id,G.dn,96)*6)); }
-  if(blk.personal||(blk.k==='lunch'&&h.shopper!==n.id)){ h.pant+=1+Math.round(hr01(n.id,G.dn,97)*2); n.food=Math.min(100,n.food+(blk.k==='lunch'?35:8)); n.hungry=0; return; }       // a bite for the day and a few things for the house
-  h.pant+=Math.round(h.mem*2.8+hr01(n.id,G.dn,95)*3); h.lastShop=G.whrs; h.needShop=false; n.food=Math.min(100,n.food+(blk.k==='lunch'?20:0));
+  const personal=!!(blk.personal||(blk.k==='lunch'&&h.shopper!==n.id)), units=personal?1+Math.round(hr01(n.id,G.dn,97)*2):Math.round(h.mem*2.8+hr01(n.id,G.dn,95)*3), sp=sh?shopOf(sh):null;
+  if(sh&&sp&&sp.sells&&sp.sells.length){ if(n.shopping)finishShopping(V,n); const plan=shopPlan(V,n,sh,sp,units,personal); n.shopping={shop:sh.id,until:G.whrs+plan.dwell,plan,personal,units,lunch:blk.k==='lunch',slot:slotId(blk)}; return; }
+  h.pant+=units; n.hungry=0; if(!personal){ h.lastShop=G.whrs; h.needShop=false; } n.food=Math.min(100,(n.food||0)+(blk.k==='lunch'?(personal?35:20):(personal?8:0)));
 }
 function onArrive(V,n){
   const blk=n.blk||curBlk(V,n), key=slotId(blk)+'@'+(n.inside||'o'); if(n.arrB===key)return; n.arrB=key;
@@ -5165,7 +5213,7 @@ function hungerCheck(V,n){
 
 /* ---------- switching what a person is doing ---------- */
 function switchBlock(V,n,blk,sid){
-  const d=destForBlk(V,n,blk); n.slot=sid; n.ovr=null; n.blk=blk;
+  const d=destForBlk(V,n,blk); n.slot=sid; n.ovr=null; n.blk=blk; if(d.k!=='shop')n.shopQ=null;
   if(n.inside&&d.inside===n.inside){ n.tgt=d; n.st='inside'; n.arrB=null; onArrive(V,n); return; }
   if(!n.inside&&!d.inside&&n.st==='idle'&&Math.hypot(n.x-d.x,n.y-d.y)<1.2){ n.tgt=d; n.arrB=null; return; }
   if(n._a&&G.in&&G.in.b.id===n.inside){ n.pend=d; n._a.leave=1; return; }
@@ -5189,6 +5237,7 @@ function npcUpdate(V,n,dt){
   const law=guardAI(V,n,dt);
   const hold=(n.chat&&G.whrs<n.chat.until)||n.busy;
   if(sid!==n.slot&&(n.st!=='walk'||n.tgtKeep)&&!hold&&!law)switchBlock(V,n,blk,sid);
+  if(n.shopQ)shopQTick(V,n);
   if(n.st==='walk'&&n.path){
     let wp=n.path[n.pi]; if(!wp){ n.st='idle'; n.moving=false; }
     else{
@@ -5197,7 +5246,7 @@ function npcUpdate(V,n,dt){
         const fn=n.path[n.path.length-1], fd=fn?Math.hypot(fn.x-n.x,fn.y-n.y):0; if(fd<(n.bestD||1e9)-.4){ n.bestD=fd; n.bestT=T_; }
         if(mv<.12||T_-(n.bestT||T_)>6){ n.stuckN=(n.stuckN||0)+1; unstick(V,n); if(n.st!=='walk'||!n.path)return; wp=n.path[n.pi]||wp; dx=wp.x-n.x; dy=wp.y-n.y; d=Math.hypot(dx,dy); } else n.stuckN=0; }
       const sl=1;                                                   // people never slow down near the player
-      if(d<.2){ n.pi++; if(n.pi>=n.path.length){ n.moving=false; n.path=null; if(n.tgt&&n.tgt.inside){ n.inside=n.tgt.inside; n.st='inside'; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); if(G.in&&G.in.b.id===n.inside&&!n._a)spawnArrival(G.in,n); } else{ n.st='idle'; n.wait=2+Math.random()*5; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); } } }
+      if(d<.2){ n.pi++; if(n.pi>=n.path.length){ n.moving=false; n.path=null; if(n.tgt&&n.tgt.inside&&shopBusy(V,n)){ } else if(n.tgt&&n.tgt.inside){ n.inside=n.tgt.inside; n.st='inside'; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); if(G.in&&G.in.b.id===n.inside&&!n._a)spawnArrival(G.in,n); } else{ if(n.tgt&&n.tgt.k==='bench'){ n.sitB=n.tgt.benchId; n.sitSlot=n.tgt.slot; } n.st='idle'; n.wait=2+Math.random()*5; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); } } }
       else{ const sp=n.spd*sl*dt*wetSlow(n); const m=Math.min(d,sp), ux=dx/d, uy=dy/d; let nx=n.x+ux*m, ny=n.y+uy*m, wall=false;
         if(walkableTile(Math.floor(n.x),Math.floor(n.y))&&!walkableTile(Math.floor(nx),Math.floor(ny))){       // never walk into a house, the law house or any wall
           if(walkableTile(Math.floor(nx),Math.floor(n.y))){ ny=n.y; } else if(walkableTile(Math.floor(n.x),Math.floor(ny))){ nx=n.x; }
@@ -6450,7 +6499,7 @@ function drawWantedStatus(V,w){
   w.span=Math.max(w.span||0,w.until-G.whrs); if(!st[2]){ const f=clamp((w.until-G.whrs)/(w.span||1),0,1), cw=bw-10; F(x+5,24,cw,2,'#26251f'); F(x+5,24,Math.round(cw*f),2,st[1]); }   // cool-down while they have lost you
 }
 function lifeVillage(V,dt){
-  dropScan(V,dt);
+  dropScan(V,dt); for(const n of V.npcs)if(n.shopping)shopTick(V,n);
   V.lkT=(V.lkT||0)-dt; if(V.lkT<=0){ V.lkT=.5; lockTick(V); }
   const s=vst(V), idle=!V.npcs.some(g=>g.hunt||(g.busy&&['report','report2','tell','dispatch'].includes(g.busy.k)));
   for(const r of recList(V)){ if(r.ty!=='p'||r.st!=='active')continue; if(r.told&&idle)r.until=Math.min(r.until,G.whrs); if(r.until<=G.whrs){ r.st='expired'; r.end=G.whrs; } }
@@ -6892,7 +6941,7 @@ function drawNpc(n){
   if(n.inside||n.hid)return; const z=cam.z, sp=playerSprite(n), sx=w2sx(n.x*TS), sy=w2sy(n.y*TS);
   if(n.sleeping){ drawSleepPose(sx,sy,z,n,false); return; }
   X.fillStyle='rgba(0,0,0,.28)'; X.fillRect(sx-4*z,sy-z,8*z,z); X.fillRect(sx-3*z,sy-2*z,6*z,z); X.fillRect(sx-3*z,sy,6*z,z);
-  X.drawImage(sp.cv,sx-PCX*z,sy-PCY*z,PCW*z,PCH*z); waterFx(n,sx,sy,z);
+  X.drawImage(sp.cv,sx-PCX*z,sy-PCY*z-((n.sitB&&n.st!=='walk'&&!n.moving)?3*z:0),PCW*z,PCH*z); waterFx(n,sx,sy,z);
   if(n.bf>.12){ X.fillStyle='rgba(140,14,14,'+Math.min(.9,.3+n.bf*.65)+')'; X.fillRect(sx-3*z,sy-2*z,2*z,2*z); X.fillRect(sx+1*z,sy-2*z,2*z,2*z); }
 }
 
