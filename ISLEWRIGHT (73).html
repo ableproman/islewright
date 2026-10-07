@@ -4100,6 +4100,8 @@ function campReason(tx,ty){
   if(clsAt(tx,ty)<2||clsAt(tx+1,ty)<2||clsAt(tx,ty+1)<2)return 'TOO WET HERE';
   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=2;dx++){ const n=nodeAt(tx+dx,ty+dy); if(n&&n.t!==5&&n.t!==8&&n.t!==9)return 'NO ROOM HERE'; }
   for(const c of G.camps)if(Math.hypot(c.x-tx,c.y-ty)<6)return 'ANOTHER CAMP IS TOO NEAR';
+  for(const o of (G.wand||[]))if(o.camp&&Math.hypot(o.camp.x-tx,o.camp.y-ty)<6)return 'A TRAVELLER IS CAMPED HERE';
+  for(let dy=0;dy<=1;dy++)for(let dx=0;dx<=1;dx++)if(G.occ.has(tk(tx+dx,ty+dy)))return 'NO ROOM HERE';
   if(vAt(tx,ty)>.7)return 'TOO STEEP';
   return null;
 }
@@ -8508,17 +8510,24 @@ function wSay(w,kind,silent){
   else pool=WTH[kind]||WTH.walk;
   w.thought=fill_(pkr(pool),w); if(!silent){ const P=G.pl; }
 }
+function campFree(w,x,y,family){                                      // never inside a town (streets, plaza, houses), never on objects, never on or beside another camp
+  for(const V of G.vlist){ if(x>=V.x0-3&&x<=V.x1+3&&y>=V.y0-3&&y<=V.y1+3)return false; }
+  for(let dy=-1;dy<=3;dy++)for(let dx=-2;dx<=3;dx++){ const tx=Math.floor(x)+dx, ty=Math.floor(y)+dy; if(G.occ.has(tk(tx,ty)))return false; const n=nodeAt(tx,ty); if(n&&n.t!==5&&n.t!==8&&n.t!==9)return false; }
+  for(const c of (G.camps||[]))if(Math.hypot(c.x-x,c.y-y)<5)return false;
+  for(const o of G.wand)if(o!==w&&o.camp&&!(family&&o.fam&&w.fam&&o.fam.gid===w.fam.gid)&&Math.hypot(o.camp.x-x,o.camp.y-y)<5)return false;
+  return true;
+}
 function wCampSpot(w){
   const W=w.dk?G.vil.get(w.dk):null; let x=Math.floor(w.x), y=Math.floor(w.y);
   if(W&&Math.hypot(W.cx-w.x,W.cy-w.y)<W.L+6){ const a=Math.atan2(w.y-W.cy||.01,w.x-W.cx||.01); x=Math.floor(W.cx+Math.cos(a)*(W.L+9)); y=Math.floor(W.cy+Math.sin(a)*(W.L*.5+9)); }
-  const offs=[[0,0],[2,0],[-2,0],[0,2],[0,-2],[3,3],[-3,3],[3,-3],[-3,-3],[5,0],[-5,0],[0,5],[0,-5],[6,6],[-6,6],[6,-6],[-6,-6],[9,0],[-9,0]];
-  for(const [ox,oy] of offs){ if(!wBlocked(x+ox+.5,y+oy+.5,true)&&!wBlocked(x+ox+2.5,y+oy+.5,true)&&!wBlocked(x+ox-1.5,y+oy+1.5,true))return {x:x+ox,y:y+oy}; }
+  const offs=[[0,0]]; for(let r=3;r<=66;r+=3)for(let a=0;a<12;a++)offs.push([Math.round(Math.cos(a*Math.PI/6)*r),Math.round(Math.sin(a*Math.PI/6)*r)]);
+  for(const [ox,oy] of offs){ if(!wBlocked(x+ox+.5,y+oy+.5,true)&&!wBlocked(x+ox+2.5,y+oy+.5,true)&&!wBlocked(x+ox-1.5,y+oy+1.5,true)&&campFree(w,x+ox,y+oy))return {x:x+ox,y:y+oy}; }
   return {x,y};
 }
 function wMakeCamp(w){
   const sp=wCampSpot(w), items=w.bag.length, rich=items>=6&&w.wl>45, fire=!w.poor||items>0||w.wl>30, gid=w.fam&&w.fam.gid;
   const ld=gid?G.wand.find(o=>o!==w&&o.fam&&o.fam.gid===gid&&o.camp&&o.camp.kind!=='rest'&&(o.st==='camp')&&Math.hypot(o.x-w.x,o.y-w.y)<16):null;
-  if(ld){ let x=sp.x,y=sp.y; for(const [ox,oy] of [[4,1],[-4,1],[1,4],[-4,-2],[4,-2],[7,1]]){ const cx=Math.floor(ld.camp.x)+ox, cy=Math.floor(ld.camp.y)+oy; if(!wBlocked(cx+.5,cy+.5,true)&&!wBlocked(cx+2.5,cy+.5,true)&&!G.wand.some(o=>o!==w&&o.camp&&Math.abs(o.camp.x-cx)<3&&Math.abs(o.camp.y-cy)<3)){ x=cx; y=cy; break; } }
+  if(ld){ let x=sp.x,y=sp.y; for(const [ox,oy] of [[4,1],[-4,1],[1,4],[-4,-2],[4,-2],[7,1]]){ const cx=Math.floor(ld.camp.x)+ox, cy=Math.floor(ld.camp.y)+oy; if(!wBlocked(cx+.5,cy+.5,true)&&!wBlocked(cx+2.5,cy+.5,true)&&campFree(w,cx,cy,true)&&!G.wand.some(o=>o!==w&&o.camp&&Math.abs(o.camp.x-cx)<3&&Math.abs(o.camp.y-cy)<3)){ x=cx; y=cy; break; } }
     w.camp={x,y,kind:items?'roll':'bare',fire:0,seed:ld.camp.seed}; }                  // shares the leader's fire
   else w.camp={x:sp.x,y:sp.y,kind:rich?'tent':items?'roll':'bare',fire:fire?1:0,seed:w.id};
   w.st='camp'; w.cph=0; w.rt=[]; wSay(w,'camp');
