@@ -5174,6 +5174,27 @@ function freeTime(V,n,dt){                                            // free ti
   if(pick.k!=='bench')return;
   n.sitUntil=G.whrs+.4+Math.random()*.9; n.ovrB=slotId(blk); seat.doing=SIT_TXT[(n.id+((G.tod*2)|0))%SIT_TXT.length]; n.ovr=seat; routeTo(V,n,seat);
 }
+const GREET_NEW=['EXCUSE ME, GOT A MOMENT? I DON\'T THINK WE HAVE MET.','OH, HELLO THERE! ARE YOU NEW AROUND HERE?','HEY, YOU! I HAVE NOT SEEN YOUR FACE BEFORE.'], GREET_KNOWN=['GOOD TO SEE YOU AGAIN. HOW ARE THINGS?','OH, IT IS YOU! HAVE A MOMENT?','THERE YOU ARE. I WAS HOPING TO CATCH YOU.'];
+function greetTick(V,n,dt){                                           // now and then a friendly resident walks up to the player and starts a chat
+  const P=G.pl, g=n.greet;
+  if(!g){
+    n.gtT=(n.gtT||0)-dt; if(n.gtT>0)return; n.gtT=8+Math.random()*8;
+    if(!P||G.in||G.ui||G.talk||G.dead||G.sleep||G.stand||G.cust||G.tr||P.carry||G.greeter||T_<(G.greetCd||0)||G.tod<8||G.tod>20)return;
+    if(n.inside||n.busy||n.talk||n.hunt||n.shopQ||n.shopping||n.sleeping||n.homeless||n.age<14||n.job==='guard'||n.militia||n.st==='walk'||!n.mem||n.mem.op<-5||(n.chat&&G.whrs<n.chat.until))return;
+    const d=Math.hypot(P.x-n.x,P.y-n.y); if(d<4||d>13||!npcSees(n,P,13)||matchedRec(V))return;
+    if(Math.random()>.014*(.5+(n.social||0)))return;
+    n.greet={t0:T_,still:0,pt:0}; G.greeter=n; return;
+  }
+  const bad=!P||G.in||G.ui&&!G.talk||G.dead||G.sleep||G.stand||G.cust||G.tr||n.hunt||n.busy||(G.talk&&G.talk.n!==n)||T_-g.t0>28;
+  const end=()=>{ n.greet=null; if(G.greeter===n)G.greeter=null; G.greetCd=T_+70; n.tgt=null; n.slot=-9; };
+  if(bad){ end(); return; }
+  if(G.talk&&G.talk.n===n){ if(!G.talk)end(); return; }
+  const d=Math.hypot(P.x-n.x,P.y-n.y);
+  if(d>1.7){ g.pt-=dt; if(g.pt<=0||n.st!=='walk'){ g.pt=.9; npcGoTo(V,n,P.x,P.y+.6,1.9,false); n.tgt={x:P.x,y:P.y,inside:null,k:'greet'}; } return; }
+  n.path=null; n.moving=false; n.st='idle'; n.wait=1; n.dir=dirFrom(P.x-n.x,P.y-n.y);
+  if(P.moving){ g.still=0; return; } g.still+=dt;                       // they wait for you to stop walking
+  if(g.still>.8){ talkOpen(n); if(G.talk&&G.talk.n===n)G.talk.text=n.mem.met>1||n.mem.greet?pickR(GREET_KNOWN):pickR(GREET_NEW); n.mem.met=Math.max(1,n.mem.met||0); end(); }
+}
 function weighPick(n,opts,rnd){                                      // the same weighing, but a sampled choice: strong favourites usually win, the others still happen now and then
   const t=n.tr||{}, thrift=.5+(10-(t.hu||5))*.04+(t.pi||5)*.02, us=opts.map(o=>(o.need||0)-(o.cost||0)*thrift+(o.pref||0)), mx=Math.max(...us), w=us.map(u=>Math.exp((u-mx)/.2)), tot=w.reduce((a,c)=>a+c,0);
   let x=rnd*tot; for(let i=0;i<opts.length;i++){ x-=w[i]; if(x<=0)return opts[i]; } return opts[opts.length-1];
@@ -5274,10 +5295,10 @@ function npcUpdate(V,n,dt){
   if(n.job==='guard'){ n.mem.op=0; n.angry=0; n.mem.rev=null; }                           // the law has no feelings about you either way
   if(n.mem.rev&&G.whrs>=n.mem.rev.t){ n.mem.op=Math.min(60,n.mem.op+n.mem.rev.a); n.mem.rev=null; n.angry=0; }          // the grudge fades after a few hours
   const law=guardAI(V,n,dt);
-  const hold=(n.chat&&G.whrs<n.chat.until)||n.busy;
+  const hold=(n.chat&&G.whrs<n.chat.until)||n.busy||n.greet;
   if(sid!==n.slot&&(n.st!=='walk'||n.tgtKeep)&&!hold&&!law)switchBlock(V,n,blk,sid);
   if(n.shopQ)shopQTick(V,n);
-  freeTime(V,n,dt);
+  freeTime(V,n,dt); greetTick(V,n,dt);
   if(n.st==='walk'&&n.path){
     let wp=n.path[n.pi]; if(!wp){ n.st='idle'; n.moving=false; }
     else{
@@ -6242,7 +6263,7 @@ function wFollowTick(w,dt){                                              // trav
   return true;
 }
 function guardBack(V,n){
-  n.hunt=0; n.chase=false; n.warned=0; n.defy=0; n.armed=0; n.aim=0; n.gs=null; n.lost=0; n.sCd=0; n.bt=0; n.pNext=-1; n.slot=-9; n.strayT=0; n.spd=1.15+(hash3(n.id,1,1)%50)/100;
+  n.invest=null; n.hunt=0; n.chase=false; n.warned=0; n.defy=0; n.armed=0; n.aim=0; n.gs=null; n.lost=0; n.sCd=0; n.bt=0; n.pNext=-1; n.slot=-9; n.strayT=0; n.spd=1.15+(hash3(n.id,1,1)%50)/100;
   if(n.inside)return;                                                                  // already in a building: the schedule walks them out
   const blk=curBlk(V,n), d=destForBlk(V,n,blk); n.blk=blk; n.slot=slotId(blk); n.ovr=null; n.tgt=d; n.tgtKeep=false; n.arrB=null;
   if(Math.hypot(n.x-V.cx,n.y-V.cy)>V.L*.85)npcGoTo(V,n,d.x,d.y,1.9,false);             // chased someone out into the country: walk back across open ground
@@ -6260,6 +6281,26 @@ function guardRecog(V,n){
   for(const g of V.npcs){ if(g===n||!isResp(V,g)||g.inside||g.sleeping||g.hunt)continue; if(Math.hypot(g.x-n.x,g.y-n.y)<10)tellResp(V,g,r); }
   toast('AN OFFICER RECOGNISES YOU  -  THE OLD CASE IS OPEN AGAIN',RED,true); sfx.err(); return true;
 }
+function investTick(V,n,dt){                                           // an officer checks a building near where the suspect was last seen: knock, ask to come in, look around, leave
+  const iv=n.invest, b=G.bmap.get(iv.id); if(!b){ n.invest=null; return false; }
+  const d=doorOf(V,b.id), w=bestRec(V);
+  if(iv.ph==='go'){
+    if(Math.hypot(d.x-n.x,d.y+.6-n.y)<1.2){ iv.ph='knock'; iv.t=T_; n.moving=false; n.st='idle'; n.path=null; n.dir=0; if(!G.in&&Math.hypot(G.pl.x-n.x,G.pl.y-n.y)<24)sfx.knock(); return true; }
+    iv.pt=(iv.pt||0)-dt; if(n.st!=='walk'||iv.pt<=0){ iv.pt=.8; npcGoTo(V,n,d.x,d.y+.6,2.2,true); }
+    iv.to=(iv.to||0)+dt; if(iv.to>25){ n.invest=null; return false; } return true; }
+  if(iv.ph==='knock'){
+    if(T_-iv.t<1.8)return true;
+    if(w)(w.chk||(w.chk=[])).push(b.id);
+    const ins=V.npcs.filter(o=>o!==n&&o.inside===b.id&&!o.sleeping&&!o.hunt&&o.job!=='guard'), hostile=ins.some(o=>o.mem&&o.mem.op<=-30);
+    if(!ins.length||Math.random()<.06+(hostile?.1:0)){ n.invest=null; return false; }                // nobody answers, or one of the very few who will not let the law in
+    if(G.in&&G.in.b.id===b.id){ n.invest=null; guardEnter(G.in,n); return true; }
+    n.inside=b.id; n.st='inside'; n.moving=false; n.path=null; iv.ph='in'; iv.until=T_+7+Math.random()*8; return true; }
+  if(iv.ph==='in'){
+    if(G.in&&G.in.b.id===b.id&&!n._a){ n.invest=null; guardEnter(G.in,n); return true; }               // the suspect is in there with them
+    if(T_<iv.until)return true;
+    n.invest=null; n.inside=null; n.st='idle'; n.x=d.x; n.y=d.y+.6; n.path=null; return false; }
+  n.invest=null; return false;
+}
 function guardAI(V,n,dt){
   if(n.job!=='guard'&&!n.militia)return false;
   const s=vst(V), P=G.pl; if(!P)return false;
@@ -6272,6 +6313,7 @@ function guardAI(V,n,dt){
   if(n.busy&&n.busy.k==='dispatch')return false;
   if(!n.hunt&&!n.inside&&!G.in&&matchedRec(V)&&npcSees(n,P,sightRange(P)+5)){ tellResp(V,n,w); n.seenT=T_; }   // an officer who simply sees the suspect joins in
   if(!n.hunt)return false; n.blk=curBlk(V,n);
+  if(n.invest&&investTick(V,n,dt))return 'held';
   if(n.inside&&(!G.in||G.in.b.id!==n.inside)){ n.sleeping=false; const d={x:w.last.x,y:w.last.y,inside:null,k:'search'}; routeTo(V,n,d); n.spd=2.2; n.chase=true; return 'held'; }
   if(n.inside)return 'held';
   const inB=G.in?G.in.b:null, dx=P.x-n.x, dy=P.y-n.y, dist=Math.hypot(dx,dy);
@@ -6292,6 +6334,7 @@ function guardAI(V,n,dt){
   }
   // not in sight: go where he was last seen, then search around
   n.lost=(n.lost||0)+dt; n.warned=n.lost>6?0:n.warned;
+  if(!n.invest&&n.id%2===0&&n.lost>4&&w.last&&Math.random()<dt*.08){ const cand=V.B.filter(b=>ENT.has(BT[b.t].k)&&b.t!=='watchhouse'&&!(w.chk&&w.chk.includes(b.id))&&Math.hypot(b.x-w.last.x,b.y-w.last.y)<32).sort((a,c)=>Math.hypot(a.x-n.x,a.y-n.y)-Math.hypot(c.x-n.x,c.y-n.y))[0]; if(cand){ n.invest={id:cand.id,ph:'go',pt:0}; n.gs='search'; return 'held'; } }
   if(n.lost>55+(n.id%7)*9+w.sev*14){ guardBack(V,n); return false; }   // searched long enough: back to work
   if(n.st!=='walk'||n.pi>=(n.path||[]).length){
     const d=Math.hypot(w.last.x-n.x,w.last.y-n.y);
@@ -7673,7 +7716,7 @@ RBUILD.house=(A,Rm,rn,b,d)=>{
           let hit=false; for(const it of sol){ if(bx<it.x+it.w+.05&&bx+bw>it.x-.05&&by<it.y+it.h+.05&&by+bh>it.y-.05){ hit=true; break; } }
           if(!hit)out.push([bx,by]); }
       return out; };
-    const sizes=want<=2?[[2,3],[1.4,3],[1.3,2.2]]:want<=4?[[1.4,3],[1.3,2.2]]:[[1.3,2.2]];
+    const sizes=want<=2?[[2.3,3],[2,3],[1.7,2.6]]:want<=4?[[2,3],[1.7,2.6],[1.55,2.4]]:[[1.7,2.6],[1.55,2.3]];
     let lay=[], sz=sizes[0]; for(const z of sizes){ lay=tryLay(z[0],z[1]); sz=z; if(lay.length>=want)break; }
     for(const [bx,by] of lay){ const bd=A.add('bed',bx,by,sz[0],sz[1],{bl:A.pk(BLANKETS),free:true}); if(bd)Rm.beds.push(bd); } }
   if(Rm.beds.length<1){ const bd=A.add('bed',w-2.3,.35,2,3,{bl:A.pk(BLANKETS)}); if(bd)Rm.beds.push(bd); }
