@@ -1470,9 +1470,12 @@ function drawInv(){
   }else{ let y=py+24; for(const l of wrapT('CLICK AN ITEM, THEN ANOTHER SLOT TO MOVE OR STACK IT. PRESS A HOTBAR KEY TO SEND IT STRAIGHT TO THAT SLOT.',Math.floor(rw/4))){ T(l,rx,y,DIM); y+=8; } }
 }
 /* ---- crafting: tools and materials, made anywhere ---- */
-function craftOk(r){ if(r.tool&&countItem(r.tool)<1)return false; for(const k in r.inp)if(countItem(k)<r.inp[k])return false; return true; }
+const craftOk1=r=>{ if(r.tool&&countItem(r.tool)<1)return false; for(const k in r.inp)if(countItem(k)<r.inp[k])return false; return true; };
+const craftVariants=r=>[r].concat(r.alts||[]);                              // one entry per item; other ways to make it are variants of the same entry
+const craftPick=r=>craftVariants(r).find(craftOk1)||r;
+function craftOk(r){ return craftVariants(r).some(craftOk1); }
 function doCraft(i){
-  const r=CRAFTS[i]; if(!craftOk(r)){ toast('MISSING MATERIALS',RED); sfx.err(); return; }
+  const r0=CRAFTS[i]; if(!craftOk(r0)){ toast('MISSING MATERIALS',RED); sfx.err(); return; } const r=craftPick(r0);
   const spare={}; for(const k in r.inp)takeItem(k,r.inp[k]);
   if(!canFit(r.out,r.nm)){ for(const k in r.inp)addItem(k,r.inp[k]); toast('PACK FULL',RED); sfx.err(); return; }
   addItem(r.out,r.nm); toast('MADE '+ITEMS[r.out].n+(r.nm>1?' X'+r.nm:''),GRN); sfx.place();
@@ -1490,7 +1493,7 @@ function drawCraft(){
   }
   if(rows>vis){ const bh=Math.max(8,Math.round((ph-50)*vis/rows)), by=py+30+Math.round((ph-50-bh)*G.cscroll2/(rows-vis)); F(px+9+lw+3,py+30,1,ph-50,'#26251f'); F(px+9+lw+3,by,1,bh,'#a98a52'); }
   F(rx-5,py+22,1,ph-30,'#3a3830');
-  const r=CRAFTS[G.csel], od=ITEMS[r.out], mc=Math.floor(rw/4); let y=py+23;
+  const r=craftPick(CRAFTS[G.csel]), od=ITEMS[r.out], mc=Math.floor(rw/4); let y=py+23;
   XU.drawImage(iconCv(r.out),rx,y); T(od.n+(r.nm>1?'  X'+r.nm:''),rx+14,y+1,AMB); y+=12;
   for(const l of wrapT(od.d,mc)){ T(l,rx,y,FG); y+=8; } y+=3;
   if(od.use)y+=drawEffects(rx,y,od.use,true,rw)+3;
@@ -1518,8 +1521,8 @@ let CATIDX=null;
 function catBuild(){
   if(CATIDX)return CATIDX; const made={}, used={};
   for(const r of RECIPES)(made[r.out]=made[r.out]||[]).push({r,k:'cook'});
-  for(const r of CRAFTS)(made[r.out]=made[r.out]||[]).push({r,k:'craft'});
-  for(const r of [...RECIPES,...CRAFTS])for(const k in r.inp)(used[k]=used[k]||new Set()).add(r.out);
+  for(const r0 of CRAFTS)for(const r of craftVariants(r0))(made[r.out]=made[r.out]||[]).push({r,k:'craft'});
+  for(const r of [...RECIPES,...CRAFTS.flatMap(craftVariants)])for(const k in r.inp)(used[k]=used[k]||new Set()).add(r.out);
   const ids=Object.keys(ITEMS).sort((a,b)=>ITEMS[a].n.localeCompare(ITEMS[b].n));
   return CATIDX={made,used,ids};
 }
@@ -3743,6 +3746,7 @@ function iconCv(id){ let c=ICV.get(id); if(!c){ c=mkCanvas(10,10); paintIcon(c.g
   R('nettletea',1,{nettle:2}); R('thymetea',1,{thyme:2}); R('rosemarytea',1,{rosemary:2}); R('cordial',1,{berries:3,honey:1}); R('nutmilk',1,{hazelnut:3,honey:1});
   for(const k in ITEMS)if(ITEMS[k].stack<32)ITEMS[k].stack=32;
 })();
+(function mergeCraftVariants(){ const first=new Map(); for(let i=0;i<CRAFTS.length;i++){ const r=CRAFTS[i], f=first.get(r.out); if(!f){ first.set(r.out,r); continue; } if(!f.alts)f.alts=[]; if(!f.alts.some(a=>JSON.stringify(a.inp)===JSON.stringify(r.inp)&&a.tool===r.tool)&&!(JSON.stringify(f.inp)===JSON.stringify(r.inp)&&f.tool===r.tool))f.alts.push(r); CRAFTS.splice(i,1); i--; } })();
 
 /* ---- pack helpers ---- */
 const countItem=id=>G.inv.reduce((a,sl)=>a+(sl&&sl.id===id?sl.n:0),0);
@@ -4557,6 +4561,7 @@ function populate(V,rn,ri,pk){
   for(const n of people){ const m=G.vmem.get(n.key); if(m){ Object.assign(n.mem,m.mem); n.rumor=m.rumor||null; if(m.life)n.life=m.life; } }
   const pop0=people.length; if(G.gone&&G.gone.length){ const gs=new Set(G.gone); for(let i=people.length-1;i>=0;i--)if(gs.has(people[i].key))people.splice(i,1); }
   restoreGuests(V,people);
+  { const seen=new Set(); for(const p of people){ let k=p.name+' '+p.last, tries=0; while(seen.has(k)&&tries++<60){ const L=p.g?FIRSTF:FIRSTM; p.name=L[(hash3(p.id,tries,7)>>>0)%L.length]; k=p.name+' '+p.last; } seen.add(k); } }          // nobody shares a full name in the same village
   V.npcs=people; V.pop=pop0;
   V.has={}; for(const b of V.B){ const k=BT[b.t].k; V.has[b.t]=(V.has[b.t]||0)+1; V.has[k]=(V.has[k]||0)+1; }
   lifeInit(V,rn);
@@ -5840,9 +5845,10 @@ function bodyAI(V,dt){
   for(const b of bs){ if(b.rep)continue; for(const n of V.npcs){ if(n.inside||n.hid||n.sleeping||n.busy||n.talk)continue; if(Math.hypot(n.x-b.x,n.y-b.y)<6.5&&lineClear(n.x,n.y,b.x,b.y)){ bodyDiscover(V,n,b); break; } } }
   const j=V.bodyJob; if(j){ const c=V.npcs.find(n=>n.key===j.key); if(c&&c.busy&&c.busy.k==='body'||c&&c.busy&&c.busy.k==='dig')return; V.bodyJob=null; }
   if(activeRecs(V).length||V.npcs.some(g=>g.hunt))return;                 // not while the place is still in uproar
-  const b=bs.filter(x=>x.rep&&!x.rotOnly&&G.whrs-x.t0>.25).sort((p,q)=>p.t0-q.t0)[0]; if(!b||Math.random()>.1)return;
-  const c=V.npcs[Math.floor(Math.random()*V.npcs.length)]; if(!c||c.age<19||c.inside||c.hid||c.busy||c.hunt||c.talk||c.sleeping||c.chat&&G.whrs<c.chat.until)return;
-  const will=clamp(.12+c.tr.br*.035+c.tr.pi*.03+(c.job==='priest'?.4:0)+(c.job==='guard'?.3:0)+(['farmhand','farmer','doctor'].includes(c.job)?.1:0)-(c.age>66?.2:0),.03,.9);
+  const b=bs.filter(x=>x.rep&&!x.rotOnly&&G.whrs-x.t0>.12).sort((p,q)=>p.t0-q.t0)[0]; if(!b||Math.random()>.3)return;       // once the uproar is over, somebody sees to the body fairly soon
+  const free=V.npcs.filter(c=>c.age>=19&&!c.inside&&!c.hid&&!c.busy&&!c.hunt&&!c.talk&&!c.sleeping&&!(c.chat&&G.whrs<c.chat.until)), offs=free.filter(c=>isResp(V,c));
+  const c=offs.length&&Math.random()<.6?offs[Math.floor(Math.random()*offs.length)]:free[Math.floor(Math.random()*free.length)]; if(!c)return;                 // the law often does it itself
+  const will=clamp(.35+c.tr.br*.03+c.tr.pi*.025+(c.job==='priest'?.4:0)+(c.job==='guard'||c.militia?.4:0)+(['farmhand','farmer','doctor'].includes(c.job)?.1:0)-(c.age>66?.2:0),.1,.95);
   if(Math.random()>will){ b.refused=(b.refused||0)+1; if(b.refused>=3&&Math.random()<.5)b.rotOnly=1; return; }   // some people turn away and leave it
   c.busy={k:'body',bid:b.id,ph:'go'}; c.spd=1.45; V.bodyJob={key:c.key}; routeTo(V,c,{x:b.x,y:b.y,inside:null,k:'body'});
 }
