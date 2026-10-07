@@ -5393,7 +5393,7 @@ function knockDoor(b,V){
   const aw=ins.filter(n=>!asleepNow(V,n));
   if(aw.length){
     const res=aw.filter(n=>n.home===b.id), pool=res.length?res:aw, n=pool[Math.floor(Math.random()*pool.length)], P=G.pl;
-    const knows=(n.mem.met>0)||!!n.cSig||!!(n.wit&&G.whrs-n.wit<24), wanted=!!matchedRec(V)&&knows;                         // a stranger who never saw the crime or met you has no reason to refuse
+    const saw=!!n.cSig||!!(n.wit&&G.whrs-n.wit<24)||!!(n.sawFlee&&G.whrs-n.sawFlee<24), wanted=!!matchedRec(V)&&saw;      // only someone who saw the crime or the chase refuses; merely knowing you does not
     if(wanted||n.mem.op<=-20){ toast('THEY WILL NOT OPEN',RED); return; }
     if(isWelcome(V,b.id)&&n.home===b.id){ const h=hhOf(V,b.id); h.opened=G.whrs+.012; h.locked=false; n.mem.op=Math.min(100,n.mem.op+1); toast('"'+pickR(['COME IN, COME IN.','OH, IT IS YOU! COME RIGHT IN.','THE DOOR IS ALWAYS OPEN FOR YOU.'])+'"',GRN); return; }
     doorTalk(b,V,n); return;
