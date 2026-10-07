@@ -7308,14 +7308,10 @@ function drawSleepPose(sx,sy,z,P,inside){      // lying on the back: bedroll and
   for(let k=0;k<3;k++){ const ph=((T_*.45+k/3)%1), q=Math.max(1,R((1+ph*1.3)*z)), zx=R(sx-12*z-ph*5*z), zy=R(sy-13*z-ph*13*z); X.globalAlpha=(1-ph)*.9; X.fillStyle='#dfe6f5'; X.fillRect(zx,zy,3*q,q); X.fillRect(zx+q*2-q,zy+q,q,q); X.fillRect(zx,zy+2*q,3*q,q); }
   X.globalAlpha=1;
 }
-function drawSeated(who,sx,sy,z){                                    // sat down: the upper body as drawn, the legs bent at the knee instead of stretched out
-  const sp=playerSprite({dir:0,moving:false,ph:0,idleT:who.idleT||0,look:who.look}), CUT=21, lk=who.look||{}, pc=hx(lk.pants!==undefined?lk.pants:0x3a4a6a), sc='#2a1e16', top=sy-PCY*z-z;
-  X.drawImage(sp.cv,0,0,PCW,CUT,sx-PCX*z,top,PCW*z,CUT*z);
-  const hy=top+CUT*z;                                                                                                   // hips
-  X.fillStyle=pc; X.fillRect(sx-4*z,hy,3*z,3*z); X.fillRect(sx+1*z,hy,3*z,3*z);                                       // thighs towards you
-  X.fillStyle='rgba(0,0,0,.22)'; X.fillRect(sx-4*z,hy+2*z,3*z,z); X.fillRect(sx+1*z,hy+2*z,3*z,z);
-  X.fillStyle=pc; X.fillRect(sx-4*z,hy+3*z,3*z,2*z); X.fillRect(sx+1*z,hy+3*z,3*z,2*z);                                // lower legs hang down
-  X.fillStyle=sc; X.fillRect(sx-4*z,hy+5*z,3*z,2*z); X.fillRect(sx+1*z,hy+5*z,3*z,2*z);                               // shoes
+function drawSeated(who,sx,sy,z){                                    // sat down: the same sprite with three rows of leg taken out, so the legs are short and end in the shoes (outline and hands kept)
+  const sp=playerSprite({dir:0,moving:false,ph:0,idleT:who.idleT||0,look:who.look}), top=sy-PCY*z;
+  X.drawImage(sp.cv,0,0,PCW,23,sx-PCX*z,top+3*z,PCW*z,23*z);
+  X.drawImage(sp.cv,0,26,PCW,PCH-26,sx-PCX*z,top+26*z,PCW*z,(PCH-26)*z);
 }
 function drawPlayer(P){
   if(G.sleep){ drawSleepPose(w2sx(P.x*TS),w2sy(P.y*TS),cam.z,P,false); return; }
