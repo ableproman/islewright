@@ -5077,7 +5077,7 @@ function doingFor(V,n,blk){
 function destForBlk(V,n,blk){
   if(n.ovr&&n.ovrB===slotId(blk))return n.ovr;
   const k=blk.k, r=hr01(n.id,G.dn*17+blk.i,91), r2=hr01(n.id,G.dn*17+blk.i,92), ps=V.plazaSpots, plazaAt=i=>{ const p=ps[Math.floor(i)%ps.length]; return {x:p.x,y:p.y,inside:null,k:'plaza'}; };
-  const benchSeat=()=>{ const bs=V._bn||(V._bn=V.B.filter(b=>b.t==='bench')); if(!bs.length)return null; const off=Math.floor(r*bs.length);              // two people to a bench, never more
+  const benchSeat=()=>{ if(n.noBench===slotId(blk))return null; const bs=V._bn||(V._bn=V.B.filter(b=>b.t==='bench')); if(!bs.length)return null; const off=Math.floor(r*bs.length);              // two people to a bench, never more
     for(let i=0;i<bs.length;i++){ const b=bs[(i+off)%bs.length], occ=V.npcs.filter(o=>o!==n&&(o.sitB===b.id||(o.tgt&&o.tgt.benchId===b.id))); if(occ.length<2){ const sl=occ.some(o=>o.sitSlot===0||(o.tgt&&o.tgt.slot===0))?1:0; return {x:b.x+.5+(sl?.22:-.22),y:b.y+1.12,inside:null,k:'bench',benchId:b.id,slot:sl}; } } return null; };
   const near=(b,ox,oy)=>{ const d=doorOf(V,b.id); return {x:d.x+ox,y:d.y+oy,inside:null,k:'door'}; };
   if(n.homeless){
@@ -5165,10 +5165,11 @@ function benchSeatFor(V,n){                                           // the nea
 const SIT_TXT=['SITTING ON A BENCH, ENJOYING THE SUN','PEOPLE WATCHING FROM A BENCH','RESTING THEIR FEET ON A BENCH','FEEDING THE BIRDS FROM A BENCH','TAKING A BREATHER ON A BENCH','WATCHING THE TOWN GO BY'];
 function freeTime(V,n,dt){                                            // free time with nothing pressing: stay put, or weigh up a seat on a bench for a while
   n.ftT=(n.ftT||0)-dt; if(n.ftT>0)return; n.ftT=25+Math.random()*35;
-  if(n.sitB&&n.st!=='walk'){ if(G.whrs>=(n.sitUntil||0)){ unsit(n); n.ovr=null; n.slot=-9; } return; }
+  if(n.sitB&&n.st!=='walk'){ if(G.whrs>=(n.sitUntil||0)){ n.noBench=slotId(n.blk); unsit(n); n.ovr=null; n.tgt=null; n.slot=-9; } return; }          // up for good this block: it must not pick the same bench again and snap back
+
   const blk=n.blk; if(!blk||!['relax','chores','yard','social','jobhunt'].includes(blk.k))return;
   if(n.st==='walk'||n.busy||n.talk||n.shopQ||n.shopping||n.sleeping||(n.chat&&G.whrs<n.chat.until)||n.hunt||(n.ovr&&n.ovrB===slotId(blk))||n.food<25)return;
-  if(G.tod<8||G.tod>20)return; const seat=benchSeatFor(V,n); if(!seat)return;
+  if(G.tod<8||G.tod>20||n.noBench===slotId(blk))return; const seat=benchSeatFor(V,n); if(!seat)return;
   const age=n.age||30, soc=n.social||0, rest=blk.k==='relax'||blk.k==='social'||blk.k==='jobhunt';
   const pick=weighPick(n,[{k:'stay',need:.6+(blk.k==='chores'?.2:0),cost:0},{k:'bench',need:.15+(age>=55?.25:0)+soc*.3+(rest?.25:0)+((G.tod>=11&&G.tod<=17)?.1:0),cost:Math.min(.5,seat.dist/60)}],Math.random());
   if(pick.k!=='bench')return;
@@ -5307,7 +5308,7 @@ function npcUpdate(V,n,dt){
         const fn=n.path[n.path.length-1], fd=fn?Math.hypot(fn.x-n.x,fn.y-n.y):0; if(fd<(n.bestD||1e9)-.4){ n.bestD=fd; n.bestT=T_; }
         if(mv<.12||T_-(n.bestT||T_)>6){ n.stuckN=(n.stuckN||0)+1; unstick(V,n); if(n.st!=='walk'||!n.path)return; wp=n.path[n.pi]||wp; dx=wp.x-n.x; dy=wp.y-n.y; d=Math.hypot(dx,dy); } else n.stuckN=0; }
       const sl=1;                                                   // people never slow down near the player
-      if(d<.2){ n.pi++; if(n.pi>=n.path.length){ n.moving=false; n.path=null; if(n.tgt&&n.tgt.inside&&shopBusy(V,n)){ } else if(n.tgt&&n.tgt.inside){ n.inside=n.tgt.inside; n.st='inside'; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); if(G.in&&G.in.b.id===n.inside&&!n._a)spawnArrival(G.in,n); } else{ if(n.tgt&&n.tgt.k==='bench'){ const bb=G.bmap.get(n.tgt.benchId); if(bb){ n.sitB=bb.id; n.sitSlot=n.tgt.slot; n.x=bb.x+.5+(n.tgt.slot?.22:-.22); n.y=bb.y+.68; n.dir=0; } } n.st='idle'; n.wait=2+Math.random()*5; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); } } }
+      if(d<.2){ n.pi++; if(n.pi>=n.path.length){ n.moving=false; n.path=null; if(n.tgt&&n.tgt.inside&&shopBusy(V,n)){ } else if(n.tgt&&n.tgt.inside){ n.inside=n.tgt.inside; n.st='inside'; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); if(G.in&&G.in.b.id===n.inside&&!n._a)spawnArrival(G.in,n); } else{ if(n.tgt&&n.tgt.k==='bench'){ const bb=G.bmap.get(n.tgt.benchId); if(bb&&Math.hypot(n.x-(bb.x+.5),n.y-(bb.y+1.12))<1.6){ n.sitB=bb.id; n.sitSlot=n.tgt.slot; n.x=bb.x+.5+(n.tgt.slot?.22:-.22); n.y=bb.y+.68; n.dir=0; } } n.st='idle'; n.wait=2+Math.random()*5; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); } } }
       else{ const sp=n.spd*sl*dt*wetSlow(n); const m=Math.min(d,sp), ux=dx/d, uy=dy/d; let nx=n.x+ux*m, ny=n.y+uy*m, wall=false;
         if(walkableTile(Math.floor(n.x),Math.floor(n.y))&&!walkableTile(Math.floor(nx),Math.floor(ny))){       // never walk into a house, the law house or any wall
           if(walkableTile(Math.floor(nx),Math.floor(n.y))){ ny=n.y; } else if(walkableTile(Math.floor(n.x),Math.floor(ny))){ nx=n.x; }
