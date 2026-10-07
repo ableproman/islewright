@@ -6447,6 +6447,9 @@ function placeHouseActor(IN,n,usedSeat,usedBed){
 function spawnArrival(IN,n){
   const Rm=IN.R, V=IN.V;
   if(IN.house&&BT[IN.b.t].k==='house'){ const a=mkActor(IN,n,Rm.door,Rm.h-.4,'wander',{sid:''}); noticeSoon(IN,a,.6); return a; }
+  if(!IN.house&&n.work===IN.b.id&&Rm.keep.length){ const blk=curBlk(V,n);                                  // a worker arriving for the shift walks round the counter to their post
+    if(blk.k==='work'){ let ks=null; for(const k of Rm.keep){ if(!IN.actors.some(x=>x.ks===k||(x.mode==='keeper'&&Math.hypot(x.x-k.x,x.y-k.y)<.6))){ ks=k; break; } }
+      if(ks){ const route=(Rm.gate?[[Rm.door,Rm.gate[0][1]]].concat(Rm.gate.map(p=>p.slice())):[]).concat([[ks.x,ks.y]]); return mkActor(IN,n,Rm.door,Rm.h-.4,'wander',{route,ks,sid:slotId(blk),role:n.job==='clerk'?'clerk':n.job==='doctor'?'doctor':n.job==='librarian'?'librarian':'keeper'}); } } }
   const s=Rm.spots[Math.floor(Math.random()*Rm.spots.length)]||[Rm.w/2,Rm.h/2]; return mkActor(IN,n,Rm.door,Rm.h-.4,'wander',{go:s,sid:slotId(curBlk(V,n))});
 }
 function intLife(IN,dt){
@@ -6620,10 +6623,17 @@ function actUpdate(a,dt,IN){
     if(dp<=.95&&a.atkCd<=0){ if(a.arrest&&!(G.lethal&&G.lethal.V===IN.V)){ arrestPlayer(IN.V,n,true); } else{ hitPlayer(a,IN); a.atkCd=1.15+Math.random()*.7; } }
     return;
   }
+  if(a.leave&&a.beh&&Rm.gate&&!a.xr)a.xr=Rm.gate.slice().reverse().map(p=>p.slice());          // behind the counter: out through the gap first
+  if(a.leave&&a.xr){ const t=a.xr[0], done=t?actMoveTo(a,IN,t[0],t[1],a.alarm?WALK*.95:(a.spd||.6)+.5,dt):true;
+    if(done||(t&&Math.hypot(t[0]-a.x,t[1]-a.y)<.2)){ a.xr.shift(); a.stuck=0; } else if(a.stuck>2.5){ a.xr=null; a.beh=0; return; }
+    if(!a.xr.length){ a.xr=null; a.beh=0; } return; }
   if(a.leave){ const via=a.via, tx=via?via[0]:Rm.door, ty=via?via[1]:Rm.h-.1, done=actMoveTo(a,IN,tx,ty,a.alarm?WALK*.95:a.spd+.5,dt);
     if(via&&(done||Math.hypot(a.x-via[0],a.y-via[1])<.2)){ a.via=null; a.stuck=0; }
     else if(a.stuck>.6){ if(!via){ for(let i=0;i<14;i++){ const sp=Rm.spots[Math.floor(Math.random()*Rm.spots.length)]; if(sp&&clearLine(Rm,a.x,a.y,sp[0],sp[1])&&Math.hypot(sp[0]-a.x,sp[1]-a.y)>.8){ a.via=sp; a.stuck=0; break; } } } else if(a.stuck>2.5){ a.via=null; a.stuck=0; if(a.alarm){ unseat(IN,a); } else{ a.wait=1.2; a.leave=0; } } }   // walk around whatever is in the way, never snap to the door
     if(!via&&(done||a.y>Rm.h-.2||Math.hypot(a.x-Rm.door,a.y-Rm.h)<.35))actorExit(a,IN); return; }
+  if(a.route&&a.route.length){ const t=a.route[0], done=actMoveTo(a,IN,t[0],t[1],(a.spd||.6)+.3,dt);
+    if(done||Math.hypot(t[0]-a.x,t[1]-a.y)<.18){ a.route.shift(); a.stuck=0; } else if(a.stuck>2.5){ a.route=null; a.ks=null; a.wait=1; return; }
+    if(!a.route.length){ a.route=null; if(a.ks){ a.mode='keeper'; a.face=a.ks.face; a.x=a.ks.x; a.y=a.ks.y; a.dir=a.face; a.moving=false; a.beh=Rm.gate?1:0; } } return; }
   if(a.seatTo){ const done=actMoveTo(a,IN,a.seatTo.x,a.seatTo.y,a.spd||WALK*.6,dt); if(done||Math.hypot(a.seatTo.x-a.x,a.seatTo.y-a.y)<.14){ a.mode='sit'; a.face=a.seatTo.f; a.x=a.seatTo.x; a.y=a.seatTo.y; a.dir=a.face; a.seatTo=null; a.moving=false; } else if(a.stuck>2){ a.seatTo=null; a.wait=1; } return; }
   if(a.mode==='keeper'){ a.moving=false; a.dir=dp<5.5?dirFrom(dxp,dyp):a.face; return; }
   if(a.mode==='sit'){ a.moving=false; if(dp<2.6||a.rx==='ask'||a.rx==='shout')a.dir=dirFrom(dxp,dyp); else a.dir=a.face; return; }
@@ -7539,7 +7549,7 @@ RBUILD.house=(A,Rm,rn,b,d)=>{
 function shopCore(A,Rm,b,d,wd,hd){ // counter row with shelves behind and an aisle in front
   const sp=Rm.sp, w=Rm.w=(b.w>=3?11:10)+(wd||0), h=Rm.h=hd||7; Rm.door=Math.floor(w/2)+.5; Rm.floor=Rm.floor||'wood';
   A.win(2.1); A.win(w-3.1); A.add('shelf',.5,0,3,1,{ids:A.ids(6)}); A.add('shelf',w-3.5,0,3,1,{ids:A.ids(6)});
-  A.add('counter',.4,3.1,w-.8,1,{stuff:[{t:'scale',x:20,y:5},{t:'coins',x:58,y:6},{t:'book',x:90,y:6,c:'#3a4a7a'},{t:'jar',x:(w-.8)*16-24,y:6}]});
+  A.add('counter',.4,3.1,w-2.3,1,{stuff:[{t:'scale',x:20,y:5},{t:'coins',x:58,y:6},{t:'book',x:90,y:6,c:'#3a4a7a'},{t:'jar',x:(w-2.3)*16-24,y:6}]}); Rm.gate=[[w-1.15,4.45],[w-1.15,2.3]];          // a gap at the end of the counter, so staff can walk behind it
   A.keep(w/2,2.15,0,'keeper'); A.light(w/2,1.8,110,.85,'lamp');
   A.add('lamp',w/2-.5,.15,1,1,{}); A.pic(w/2+.6,0x8a7a3a);
 }
@@ -7577,7 +7587,7 @@ RBUILD.tavern=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp||SHOPS.tavern; Rm.sp=sp; const w=Rm.w=14, h=Rm.h=9; Rm.floor='wood'; Rm.fc=0x8a5a34; Rm.door=7.5; Rm.wt=b.tx===0?1:b.tx;
   A.win(2.2); A.win(5.4); A.win(w-2.6);
   A.add('hearth',.5,0,3,1); A.light(2,1.3,90,1,'fire');
-  A.add('bar',5.4,2.4,7,1,{stuff:[{t:'mug',x:12,y:6},{t:'mug',x:26,y:6},{t:'bottle',x:44,y:6},{t:'mug',x:70,y:6},{t:'coins',x:90,y:6}]}); A.keep(8.9,1.5,0,'keeper');
+  Rm.gate=[[4.8,3.8],[4.8,1.5]]; A.add('bar',5.4,2.4,7,1,{stuff:[{t:'mug',x:12,y:6},{t:'mug',x:26,y:6},{t:'bottle',x:44,y:6},{t:'mug',x:70,y:6},{t:'coins',x:90,y:6}]}); A.keep(8.9,1.5,0,'keeper');
   A.add('shelf',6.2,0,2,1,{ids:['ale','cider','coffee','mintea']}); A.add('keg',9,.2,1,1,{}); A.add('keg',10,.2,1,1,{}); A.add('keg',11,.3,1,1,{}); A.add('cabinet',12,0,2,1,{});
   A.light(8.9,1.7,120,.9,'lamp');
   const spots=[[1.1,3.8],[5,5.5],[9.3,5.4],[1.1,6.7],[5.2,7.1]]; for(const [x,y] of spots){ if(y>h-1.9)continue; A.tableSet(x,y,2,2,[{t:'mug',x:7,y:6},{t:'plate',x:24,y:6}]); }
@@ -7587,7 +7597,7 @@ RBUILD.tavern=(A,Rm,rn,b,d)=>{
 RBUILD.inn=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp||SHOPS.inn; Rm.sp=sp; const w=Rm.w=14, h=Rm.h=9; Rm.floor='wood'; Rm.fc=0x9a6a3a; Rm.door=3.5; A.win(3.6); A.win(8); A.win(w-2.6);
   A.add('hearth',w-3.7,0,3,1); A.light(w-2.2,1.3,90,1,'fire');
-  A.add('counter',.5,2.3,5,1,{stuff:[{t:'book',x:12,y:6,c:'#7a3a2a'},{t:'candle',x:36,y:6},{t:'coins',x:60,y:6}]}); A.keep(2.9,1.5,0,'keeper'); A.add('cabinet',.6,0,2,1,{}); A.add('shelf',3,0,2,1,{ids:['ale','coffee','bread','stew']}); A.light(2.9,1.7,100,.8,'lamp');
+  Rm.gate=[[6.1,3.7],[6.1,1.6]]; A.add('counter',.5,2.3,5,1,{stuff:[{t:'book',x:12,y:6,c:'#7a3a2a'},{t:'candle',x:36,y:6},{t:'coins',x:60,y:6}]}); A.keep(2.9,1.5,0,'keeper'); A.add('cabinet',.6,0,2,1,{}); A.add('shelf',3,0,2,1,{ids:['ale','coffee','bread','stew']}); A.light(2.9,1.7,100,.8,'lamp');
   for(let i=0;i<3;i++){ const bd=A.add('bed',6+i*2.7,.2,2,3,{bl:A.pk(BLANKETS)}); if(bd)Rm.beds.push(bd); }
   A.add('chest',6.1,3.6,1,1,{loot:true}); A.add('chest',8.8,3.6,1,1,{loot:true}); A.add('chest',11.5,3.6,1,1,{loot:true});
   A.tableSet(7,5.9,2,2,[{t:'mug',x:7,y:6},{t:'plate',x:24,y:6}]); A.tableSet(11,5.9,2,2,[{t:'plate',x:9,y:6},{t:'candle',x:24,y:6}]); A.add('rug',6.6,4.6,6,1.6,{col:0x3a4a6a,flat:true,free:true}); A.add('plant',.6,h-2.3,1,1,{}); A.add('barrel',w-1.4,2.3,1,1,{}); A.pic(5.5);
@@ -7597,13 +7607,13 @@ RBUILD.smithy=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp||SHOPS.smithy; Rm.sp=sp; Rm.floor='stone'; Rm.fc=0x6a6862; Rm.wt=3; const w=Rm.w=11, h=Rm.h=8; Rm.door=Math.floor(w/2)+.5; A.win(w-2.6);
   A.add('forge',.6,0,3,1,{}); A.light(2.1,1.4,100,1,'fire'); A.add('anvil',4.2,1.7,1,1,{}); A.add('barrel',.5,2.3,1,1,{}); A.add('workbench',4.5,0,2,1,{});
   A.add('toolrack',w-3.5,0,3,1,{ids:['axe','knife','spear','rod','firestarter']}); A.hooks(7,3,'tools');
-  A.add('counter',5.8,3.3,w-6.3,1,{stuff:[{t:'coins',x:14,y:6},{t:'book',x:30,y:6,c:'#3a3a3a'}]}); A.keep(8.4,2.3,0,'keeper'); A.light(8.3,2.2,100,.8,'lamp');
+  Rm.gate=[[5.4,4.6],[5.4,2.3]]; A.add('counter',5.8,3.3,w-6.3,1,{stuff:[{t:'coins',x:14,y:6},{t:'book',x:30,y:6,c:'#3a3a3a'}]}); A.keep(8.4,2.3,0,'keeper'); A.light(8.3,2.2,100,.8,'lamp');
   A.add('crate',1.2,5.3,1,1,{prod:[0x6a6a72]}); A.add('barrel',2.2,5.3,1,1,{}); A.add('logs',.5,6.3,2,1,{}); A.add('sack',w-1.9,5.4,1,1,{sc:0x4a4a52});
 };
 function workshopLike(A,Rm,b,d){
   const sp=Rm.sp=Rm.sp||SHOPS[b.t]||SHOPS.workshop, st=sp.style, w=Rm.w=12, h=Rm.h=8; Rm.door=Math.floor(w/2)+.5; Rm.floor=st==='stone'||st==='pottery'?'stone':'wood'; Rm.fc=0x9a8a70; A.win(2.2); A.win(w-3);
   A.add('shelf',.6,0,3,1,{ids:A.ids(6)}); A.add('shelf',w-3.6,0,3,1,{ids:A.ids(6)});
-  A.add('counter',.5,3.3,5.5,1,{stuff:[{t:'coins',x:14,y:6},{t:'book',x:34,y:6,c:'#3a4a7a'}]}); A.keep(3.2,2.3,0,'keeper'); A.light(3.2,2.2,100,.8,'lamp');
+  Rm.gate=[[6.6,4.6],[6.6,2.3]]; A.add('counter',.5,3.3,5.5,1,{stuff:[{t:'coins',x:14,y:6},{t:'book',x:34,y:6,c:'#3a4a7a'}]}); A.keep(3.2,2.3,0,'keeper'); A.light(3.2,2.2,100,.8,'lamp');
   if(st==='pottery'){ A.add('kiln',w-3.4,1.2,2,2,{}); A.light(w-2.4,2.6,90,.9,'fire'); A.add('wheel',6.8,2,1,1,{}); A.add('pot',7.9,2.1,1,1,{}); A.add('crate',9,.8,1,1,{prod:[0xb8683a]}); }
   else if(st==='stone'){ A.add('crate',6.8,1,1,1,{prod:[0x8c8a84,0xa8a69e]}); A.add('crate',7.8,1,1,1,{prod:[0x8c8a84]}); A.add('planks',w-3.4,1.2,2,1,{col:0x9c9b95}); }
   else{ A.add('sawbench',6.5,1.5,3,1,{}); A.add('logs',w-3.2,1.2,2,1,{}); A.add('planks',9.5,2.7,2,1,{}); }
@@ -7627,7 +7637,7 @@ RBUILD.chapel=(A,Rm,rn,b,d)=>{
 RBUILD.library=(A,Rm,rn,b,d)=>{
   const w=Rm.w=13, h=Rm.h=9; Rm.floor='wood'; Rm.fc=0x8a6a44; Rm.door=6.5; A.win(w/2-.4);
   for(let i=0;i<5;i++)A.add('bookcase',.5+i*2.4,0,2,1,{});
-  A.add('counter',8.6,3.1,4.2,1,{stuff:[{t:'book',x:8,y:6,c:'#2a4a7a'},{t:'book',x:20,y:6,c:'#7a2a2a'},{t:'candle',x:50,y:6}]}); A.keep(10.7,2.2,0,'librarian'); A.light(10.7,2,100,.8,'lamp');
+  Rm.gate=[[7.9,4.5],[7.9,2.2]]; A.add('counter',8.6,3.1,4.2,1,{stuff:[{t:'book',x:8,y:6,c:'#2a4a7a'},{t:'book',x:20,y:6,c:'#7a2a2a'},{t:'candle',x:50,y:6}]}); A.keep(10.7,2.2,0,'librarian'); A.light(10.7,2,100,.8,'lamp');
   A.tableSet(1.2,4,3,3,[{t:'book',x:10,y:5,c:'#7a3a2a'},{t:'candle',x:24,y:6},{t:'book',x:40,y:6,c:'#2a5a3a'}]); A.tableSet(5.4,5.6,3,3,[{t:'book',x:10,y:5,c:'#2a4a7a'},{t:'candle',x:30,y:6}]);
   A.add('globe',.7,6.2,1,1,{}); A.add('bookcase',w-2.6,h-1.9,2,1,{free:true}); A.add('plant',9.4,h-2,1,1,{}); A.add('rug',1.2,6.8,3,1.6,{col:0x3a5a4a,flat:true,free:true}); A.light(3,5,100,.7,'lamp');
 };
@@ -7642,20 +7652,20 @@ RBUILD.clinic=(A,Rm,rn,b,d)=>{
 };
 RBUILD.hall=(A,Rm,rn,b,d)=>{
   const w=Rm.w=14, h=Rm.h=10; Rm.floor='tile'; Rm.fc=0xc8bca4; Rm.wt=2; Rm.door=7; A.win(2.3); A.win(w-3.3); A.banner(5.2,0x2a4a8a); A.banner(8.2,0x2a4a8a);
-  A.add('desk',4.8,1.3,4.4,1,{stuff:[{t:'book',x:10,y:5,c:'#7a2a2a'},{t:'candle',x:44,y:6},{t:'coins',x:60,y:6}]}); A.keep(7,.9,0,'clerk'); A.light(7,2,120,.8,'lamp');
+  Rm.gate=[[3.8,3.4],[3.8,.9]]; A.add('desk',4.8,1.3,4.4,1,{stuff:[{t:'book',x:10,y:5,c:'#7a2a2a'},{t:'candle',x:44,y:6},{t:'coins',x:60,y:6}]}); A.keep(7,.9,0,'clerk'); A.light(7,2,120,.8,'lamp');
   A.add('maptable',1.2,4.6,3,2,{}); A.add('bench',9.5,5,3,1,{}); A.add('bench',9.5,7,3,1,{}); A.seat(11,5.6,'n'); A.add('runner',6.2,3,1.6,h-3,{flat:true,free:true}); A.add('bookcase',.5,0,2,1,{}); A.add('bookcase',w-2.5,0,2,1,{}); A.add('plant',1,h-2,1,1,{}); A.add('plant',w-1.7,h-2,1,1,{});
 };
 RBUILD.hall2=RBUILD.hall;
 RBUILD.barn=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp=SHOPS.barn, w=Rm.w=12, h=Rm.h=8; Rm.floor='dirt'; Rm.wt=1; Rm.door=6; A.win(w-3);
   A.add('hay',.5,0,3,2,{}); A.add('hay',w-3.5,0,3,2,{}); A.add('crate',4.6,.4,1,1,{prod:[0xe8d8a0]}); A.add('sack',5.8,.5,1,1,{sc:0xd8c8a0}); A.add('sack',6.8,.4,1,1,{sc:0xc8b888});
-  A.add('counter',3.5,3.1,5,1,{stuff:[{t:'coins',x:12,y:6},{t:'fruit',x:50,y:6,c:'#e8d8a0'}]}); A.keep(6,2.2,0,'keeper'); A.light(6,1.9,100,.8,'lamp'); A.add('barrel',.6,5.4,1,1,{}); A.add('cart',w-3.4,5.2,2,1,{}); A.add('hay',.5,3.3,2,1,{});
+  Rm.gate=[[3.0,4.5],[3.0,2.2]]; A.add('counter',3.5,3.1,5,1,{stuff:[{t:'coins',x:12,y:6},{t:'fruit',x:50,y:6,c:'#e8d8a0'}]}); A.keep(6,2.2,0,'keeper'); A.light(6,1.9,100,.8,'lamp'); A.add('barrel',.6,5.4,1,1,{}); A.add('cart',w-3.4,5.2,2,1,{}); A.add('hay',.5,3.3,2,1,{});
 };
 RBUILD.stable=RBUILD.barn;
 RBUILD.windmill=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp=SHOPS.windmill, w=Rm.w=9, h=Rm.h=9; Rm.floor='wood'; Rm.fc=0x8a6a44; Rm.door=4.5; A.win(w/2-.4);
   A.add('mill',2.5,.8,4,3,{}); A.add('sack',.5,.4,1,1,{sc:0xf0ece0}); A.add('sack',1.4,.5,1,1,{sc:0xe8e4d8}); A.add('sack',w-1.6,.4,1,1,{sc:0xf0ece0}); A.add('crate',w-2.6,.5,1,1,{prod:[0xe8d8a0]});
-  A.add('counter',.5,4.6,3.6,1,{stuff:[{t:'scale',x:14,y:5},{t:'coins',x:40,y:6}]}); A.keep(2.3,3.8,0,'keeper'); A.light(2.3,3.5,100,.8,'lamp'); A.add('barrel',w-1.6,5.4,1,1,{}); A.add('sack',w-2.6,5.4,1,1,{sc:0xd8c8a0});
+  Rm.gate=[[5,5.6],[5,4.2]]; A.add('counter',.5,4.6,3.6,1,{stuff:[{t:'scale',x:14,y:5},{t:'coins',x:40,y:6}]}); A.keep(2.3,3.8,0,'keeper'); A.light(2.3,3.5,100,.8,'lamp'); A.add('barrel',w-1.6,5.4,1,1,{}); A.add('sack',w-2.6,5.4,1,1,{sc:0xd8c8a0});
 };
 
 /* ---- baking: floor, walls, decoration and furniture sprites ---- */
@@ -7796,7 +7806,7 @@ function populateRoom(IN){
   const hr=bldOpen(b).open, staff=V.npcs.filter(n=>n.work===b.id&&n.inside===b.id), placedS=new Set();
   const jobRole={baker:'keeper',smith:'keeper',innkeeper:'keeper',barmaid:'keeper',merchant:'keeper',shopkeeper:'keeper',craftsman:'keeper',priest:'priest',teacher:'teacher',doctor:'doctor',clerk:'clerk',guard:'keeper',librarian:'librarian',miller:'keeper',farmhand:'keeper',stablehand:'keeper'};
   staff.forEach(n=>{ if(!hr&&k!=='house')return; let ks=null; for(let i=0;i<Rm.keep.length;i++)if(!usedKeep.has(i)){ ks=Rm.keep[i]; usedKeep.add(i); break; }
-    placedS.add(n); if(ks)mk(n,ks.x,ks.y,'keeper',{face:ks.face,role:jobRole[n.job]||'keeper'}); else{ const s=Rm.spots[Math.floor(Math.random()*Rm.spots.length)]||[Rm.w/2,Rm.h/2]; mk(n,s[0],s[1],'wander',{role:jobRole[n.job]}); } });
+    placedS.add(n); if(ks)mk(n,ks.x,ks.y,'keeper',{face:ks.face,role:jobRole[n.job]||'keeper',beh:Rm.gate?1:0}); else{ const s=Rm.spots[Math.floor(Math.random()*Rm.spots.length)]||[Rm.w/2,Rm.h/2]; mk(n,s[0],s[1],'wander',{role:jobRole[n.job]}); } });
   const sleepNow=slot=>slot===0;
   const roomCap=k==='house'?(BT[b.t].cap||4)+2:clamp(Math.round(b.w*b.h*1.4)+1,4,14);
   for(const n of V.npcs){
