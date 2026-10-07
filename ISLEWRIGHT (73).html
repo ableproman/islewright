@@ -4890,20 +4890,20 @@ function guardDay(V,n,rr){
      from 4:30 to 23:30 and put somebody out on patrol whenever two are on duty; every time shifts a little each day (shared by all of them, so the hand-overs
      match), and wake-ups, breakfast and prep differ per person. Meals are never taken at the desk while somebody else needs it, and never both together. */
   const sh=hr01(V.cx|0,(G.dn|0)*7+3,41), s2=hr01(V.cy|0,(G.dn|0)*7+5,42), s3=hr01(V.cx|0,(G.dn|0)*7+9,43);
-  const LE=9.3+sh*.4, LEe=LE+.7+s2*.15, ML=11.9+sh*.3, MLe=ML+.7+s2*.15, Eend=Math.max(12.8+s3*.3,MLe+.25), TL=Math.max(14.7+s2*.3,Eend+.9);      // E lunch, E leaves, M lunch, L arrives
+  const LE=9.3+sh*.4, LEe=LE+.7+s2*.15, ML=11.9+sh*.3, MLe=ML+.7+s2*.15, Eend=Math.max(12.8+s3*.3,MLe+.75), TL=Math.max(14.7+s2*.3,Eend+.9);      // E lunch, E leaves, M lunch, L arrives
   const wake=(c0,rg)=>{ let c=c0+rr(33)*rg; push('sleep',0,c); push('getup',c,c+.2); c+=.2; const bf=.3+rr(34)*.14; push('bfast',c,c+bf,{meal:'b'}); c+=bf; const pr=.12+rr(35)*.12; push('prep',c,c+pr); return c+pr; };
   if(role==='E'&&pair){
     wake(3.2,.25); push('work',4.25,LE,{work:1}); push('lunch',LE,LEe,{meal:'l',where:'home'}); push('work',LEe,Eend,{work:1});      // opens the law house; the middle officer takes the desk during the lunch
     push('chores',Eend,Eend+.9,{garden:rr(32)<.4?1:0}); push('dinner',Eend+2.4,Eend+3.05,{meal:'d'}); push('relax',Eend+3.05,20.3); push('sleep',20.3,24);
   } else if(role==='M'){
-    let c=wake(6.9,.4); push('chores',c,8.5); push('patrol',8.5,LE,{work:1});                                  // out on patrol while the early officer is at the desk
-    push('work',LE,LEe,{work:1});                                                                              // covers the desk during the early officer's lunch
-    push('patrol',LEe,ML,{work:1}); push('lunch',ML,MLe,{meal:'l',where:'tavern'}); push('patrol',MLe,Eend-.1,{work:1});
-    push('work',Eend-.1,TL,{work:1});                                                                          // holds the desk until the late officer arrives
+    let c=wake(6.9,.4); push('chores',c,8.5); push('patrol',8.5,LE-.35,{work:1});                                // out on patrol while the early officer is at the desk
+    push('work',LE-.35,LEe+.25,{work:1});                                                                              // covers the desk during the early officer's lunch
+    push('patrol',LEe+.25,ML,{work:1}); push('lunch',ML,MLe,{meal:'l',where:'tavern'}); push('patrol',MLe,Eend-.45,{work:1});
+    push('work',Eend-.45,TL,{work:1});                                                                          // holds the desk until the late officer arrives
     push('patrol',TL,17.4+s3*.3,{work:1});                                                                     // then out again while the late officer has the desk
     push('chores',17.7+s3*.3,18.6+s3*.3,{garden:rr(32)<.4?1:0}); push('dinner',18.8+s3*.3,19.45+s3*.3,{meal:'d'}); push('relax',19.45+s3*.3,22); push('sleep',22,24);
   } else if(role==='L'&&pair){
-    let c=wake(8.8,.4); push('chores',c,c+1.2); push('relax',c+1.2,TL-.1); push('work',TL-.1,17.9+s3*.4,{work:1});
+    let c=wake(8.8,.4); push('chores',c,c+1.2); push('relax',c+1.2,TL-.45); push('work',TL-.45,17.9+s3*.4,{work:1});
     push('dinner',18+s3*.4,18.7+s3*.4,{meal:'d',where:'work'}); push('work',18.7+s3*.4,23.5,{work:1}); push('relax',23.5,23.9); push('sleep',23.9,24);
   } else if(role==='A'||(role==='E'&&!pair)){                                                                  // early street officer: patrols from the morning to early afternoon
     wake(3.3,.3); const o=desk?0:off;
@@ -4948,8 +4948,8 @@ function buildSched(V,n){
   const lunchWhere=(bW)=>{
     if(shopper)return 'shop';
     if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,71)<shopUrge(V,n,h,dn,1)*.75)return 'shop';
-    let pH=.5; if(bW&&G.bmap.get(n.home)){ const d=Math.hypot(bW.x-G.bmap.get(n.home).x,bW.y-G.bmap.get(n.home).y); pH=d<12?.62:.2; }
-    const r=n.lunchPref*.6+rr(7)*.4; if(r<pH)return 'home'; if(r<pH+.22&&eateries(V).length)return 'tavern'; if(r<pH+.4)return 'bench'; return 'work';
+    let pH=.6; if(bW&&G.bmap.get(n.home)){ const d=Math.hypot(bW.x-G.bmap.get(n.home).x,bW.y-G.bmap.get(n.home).y); pH=d<12?.85:.5; }
+    const r=n.lunchPref*.6+rr(7)*.4; if(r<pH)return 'home'; if(r<pH+.1&&eateries(V).length)return 'tavern'; if(r<pH+.13)return 'bench'; return 'work';
   };
   if(hasWork){
     const bW=n.work?G.bmap.get(n.work):null, wid=n.work||(n.job==='farmer'?9001:n.job==='guard'?9002:9003);
@@ -4967,7 +4967,7 @@ function buildSched(V,n){
     if(shopper){ const sh=pickShop(V,n,dn); if(sh){ const hh0=hoursOf(sh), es=clamp(Math.max(c+.2,8.4+rr(15)*1.3),hh0[0]+.3,Math.max(hh0[0]+.4,hh0[1]-1.1)); if(es>c+.1)push(mk,c,es); push('errand',es,es+.55+rr(16)*.3,{shop:sh.id}); c=B[B.length-1].e; } else{ push('errand',c+.3,c+1,{shop:undefined,forage:1}); c=B[B.length-1].e; } }
     { const bkB=bankOf(V); if(!shopper&&bkB&&n.age>=18&&wantsBank(V,n,dn)){ const hb=hoursOf(bkB), es=clamp(Math.max(c+.2,9.4+rr(31)*1.6),hb[0]+.3,hb[1]-.9); if(es>=c+.1&&es+.5<L0){ push(mk,c,es); push('errand',es,es+.5,{shop:bkB.id,bank:1}); c=B[B.length-1].e; } } }
     { const mEnd=Math.max(c+.2,L0); if(mk==='jobhunt'||mk==='social'){ const out=Math.min(mEnd-.4,9.0+rr(20)*1.1); if(out>c+.3){ push(rr(21)<.5?'chores':'yard',c,out,{garden:1}); c=out; } } push(mk,c,mEnd); c=B[B.length-1].e; }
-    { let lw=n.lunchPref<.62?'home':n.lunchPref<.82&&eateries(V).length?'tavern':'bench', lsh=null;
+    { let lw=n.lunchPref<.78?'home':n.lunchPref<.92&&eateries(V).length?'tavern':n.lunchPref>.97?'bench':'home', lsh=null;
       if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,71)<shopUrge(V,n,h,dn,1)*.85){ lsh=pickShop(V,n,dn); if(lsh)lw='shop'; }
       push('lunch',c,c+.7+rr(8)*.5,{meal:'l',where:lw,shop:lsh?lsh.id:undefined}); c=B[B.length-1].e; }
     if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,72)<shopUrge(V,n,h,dn,2)*.6){ const sh=pickShop(V,n,dn+3), hh=sh?hoursOf(sh):null; if(sh&&c+.7<hh[1]-.2){ push('errand',c+.1,c+.1+.5+rr(42)*.3,{shop:sh.id,personal:1}); c=B[B.length-1].e; } }
