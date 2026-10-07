@@ -4568,6 +4568,7 @@ function npcGoTo(V,n,x,y,spd,chase){                                  // returns
   let pts, heavy=false; if(lineClear(n.x,n.y,x,y))pts=[{x:n.x,y:n.y},{x,y}];
   else{ heavy=true; const m=tilePathPts({x:n.x,y:n.y},{x,y}); pts=m?[{x:n.x,y:n.y}].concat(m,[{x,y}]):null;
     if(!pts){ const g=V.nodes.length?graphPath(V,n.x,n.y,x,y):[]; pts=fixPath([{x:n.x,y:n.y}].concat(g.map(q=>({x:q.x,y:q.y})),[{x,y}])); } }
+  if(chase)n.tgt=null;                                                  // a pursuit never ends by walking through some old destination's door and vanishing inside
   n.path=pts; n.pi=1; n.st='walk'; if(spd)n.spd=spd; n.chase=!!chase; n.moving=true; n.pgT=0; n.pgX=n.x; n.pgY=n.y; n.bestD=1e9; n.bestT=T_; return heavy;
 }
 function unstick(V,n){                                               // stuck on something: walk around it, or give up and re-plan
