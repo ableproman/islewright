@@ -1648,7 +1648,7 @@ function drawHUD(dt){
   drawMinimap(dt); drawVitals(); clHud(); drawWallet(); drawHotbar(); drawClock(); drawPrompt(); drawBubbles(); drawBanner(); drawTemp(); drawBreakBar(); drawLawHud(); drawStand(); drawCust();
   const ty=UH-34;
   toasts.forEach((t,i)=>{ XU.globalAlpha=Math.min(1,t.l); T(t.s,UW/2,ty-(toasts.length-1-i)*9,t.c,1,1); XU.globalAlpha=1; });
-  const nf_=UI.length; if(G.ui==='inv')drawInv(); else if(G.ui==='recipes')drawRecipes(); else if(G.ui==='craft')drawCraft(); else if(G.ui==='catalog')drawCatalog(); else if(G.ui==='journal')drawJournal(); else if(G.ui==='camp')drawCampMenu(); else if(G.ui==='shop')drawShop(); else if(G.ui==='wardrobe')clDrawWardrobe(); else if(G.ui==='clothes')clDrawStore(); else if(G.ui==='mark')drawMarkMenu();
+  const nf_=UI.length; if(G.ui==='inv')drawInv(); else if(G.ui==='recipes')drawRecipes(); else if(G.ui==='craft')drawCraft(); else if(G.ui==='catalog')drawCatalog(); else if(G.ui==='journal')drawJournal(); else if(G.ui==='camp')drawCampMenu(); else if(G.ui==='loot')drawLoot(); else if(G.ui==='shop')drawShop(); else if(G.ui==='wardrobe')clDrawWardrobe(); else if(G.ui==='clothes')clDrawStore(); else if(G.ui==='mark')drawMarkMenu();
   G.navList=(G.ui&&NAVUI.includes(G.ui))?UI.slice(nf_).filter(r=>r.fn&&r.w>=4&&r.h>=4&&r.w*r.h<UW*UH*.2&&r.h<UH*.55):null; navDraw();
   drawTalk();
   if(G.dead){ F(0,0,UW,UH,'rgba(6,0,0,.9)'); T('YOU DIED',UW/2,UH/2-26,RED,4,1); T(P.food<=0?'YOU STARVED':'',UW/2,UH/2+2,FG,1,1); btn(UW/2-tw('RESPAWN')/2,UH/2+16,'RESPAWN',()=>respawn()); }
@@ -2984,6 +2984,7 @@ addEventListener('wheel',e=>{
   if(G.ui==='camp'){ if(G.ctab==='cook')G.cscroll+=d; return; }
   if(G.ui==='recipes'){ G.rscroll+=d*2; return; }
   if(G.ui==='craft'){ G.cscroll2+=d*2; return; }
+  if(G.ui==='loot'&&G.loot){ G.loot.scroll+=d*2; return; }
   if(G.ui==='shop'){ G.shop.scroll+=d*2; return; }
   if(G.ui==='wardrobe'&&G.wd){ G.wd.scroll+=d*2; return; }
   if(G.ui==='clothes'&&G.cs){ G.cs.scroll+=d*2; return; }
@@ -3737,7 +3738,7 @@ function slotSwap(a,b){
 function dropAt(id,n){ const P=G.pl, v=DIRVEC[P.dir]; let x=P.x+v[0]*.9, y=P.y+v[1]*.9; if(hitsBody(x,y)){ x=P.x; y=P.y; } const d={x,y,id,n,t:0,by:'p',at:G.whrs,sig:outfitSig(P),stolen:isStolenId(id),wit:[],ni:0,insp:[]}; G.drops.push(d); dropSeen(d); }
 function dropSlot(i,all){ const sl=G.inv[i]; if(!sl)return; if(G.in){ toast('NOT HERE. STEP OUTSIDE FIRST',DIM); return; } const n=all?sl.n:1; dropAt(sl.id,n); sl.n-=n; if(sl.n<=0)G.inv[i]=null; sfx.drop(); }
 /* ---- menus: one rule for all of them. The key that opened a menu closes it, Esc closes any menu, and the interact key also closes the camp menu. ---- */
-function closeUI(){ if(G.ui)sfx.close(); if(G.in&&G.in.fit)G.in.fit=null; G.wd=null; G.cs=null; G.ui=null; G.invSel=-1; G.cookCamp=null; G.jedit=false; G.catTyping=false; G.cook=null; }
+function closeUI(){ if(G.ui==='loot'&&G.loot)lootFinish(); if(G.ui)sfx.close(); if(G.in&&G.in.fit)G.in.fit=null; G.wd=null; G.cs=null; G.ui=null; G.invSel=-1; G.cookCamp=null; G.jedit=false; G.catTyping=false; G.cook=null; }
 function openUI(name){ if(G.ui===name)return; if(!G.ui)sfx.open(); else sfx.tick(); G.ui=name; G.invSel=-1; G.jedit=false; G.catTyping=false; }
 function toggleUI(name){ if(G.ui===name)closeUI(); else openUI(name); }
 function moveToHotbar(h){ if(G.invSel>=0&&G.invSel!==h){ slotSwap(G.invSel,h); G.invSel=h; } }
@@ -5435,16 +5436,68 @@ function robPerson(n,V){
   if(IN){ IN.heat=(IN.heat||0)+2+(law?1.5:0); IN.looted=(IN.looted||0)+1; IN.loot=1; IN.sig=IN.sig||outfitSig(P); }
   if(ok){
     let stash=0; if(t.ho<=3&&pu.c>20&&Math.random()<.6){ stash=Math.round(pu.c*.35); pu.c-=stash; }                       // the dishonest hide a little of it
-    const res=robTake(pu); pu.c=stash; pu.r=1; pu.t=G.whrs; let amt=res.amt;
-    if(box&&box.c>0){ amt+=box.c; P.cash+=box.c; box.rec.c=0; box.rec.pop=Math.max(.2,box.rec.pop-.3); }
-    sfx.coin&&sfx.coin(); toast('ROBBED '+n.name+(law?' (OFFICER)':'')+'  +'+fmtM(amt)+(res.got.length?'  '+res.got.join(', '):''),AMB,true);
-    n.mem.op=Math.max(-100,n.mem.op-40); n.angry=60; robEnd(robSay(n,'ok'));
+    pu.r=1; pu.t=G.whrs; if(box)box.rec.pop=Math.max(.2,box.rec.pop-.3);
+    const src={it:pu.it, get c(){ return pu.c+(box?box.rec.c:0); }, takeCash(){ const c=pu.c+(box?box.rec.c:0); pu.c=0; if(box)box.rec.c=0; return c; }, done(){ pu.c+=stash; }};
+    toast('YOU ROBBED '+n.name+(law?' (OFFICER)':''),AMB,true);
+    n.mem.op=Math.max(-100,n.mem.op-40); n.angry=60; shoutStart(n); lootOpen(n,V,src,robSay(n,'ok'));
     if(a){ robFlee(a); robAlarm(IN,a); }
     else{ n.cSig=outfitSig(P); n.cItem=heldId(); n.cLast={x:n.x,y:n.y}; witnessScan(V,'theft',law?4:3); if(law)reportCrime(V,n,4,'loot',true); else startReport(V,n,3,'loot'); }
   } else{
     toast(n.name+' FIGHTS BACK',RED,true); n.mem.op=Math.max(-100,n.mem.op-30); n.angry=80; robEnd(robSay(n,'fail'));
     if(a){ IN.forced=1; if(!a.rx||a.rx==='ask'||a.rx==='shout')rxStart(a,IN,Math.max(2.4,IN.heat),'loot'); }
     else{ n.cSig=outfitSig(P); n.cItem=heldId(); n.cLast={x:n.x,y:n.y}; witnessScan(V,'assault',law?4:3); if(law)reportCrime(V,n,4,'assault',true); if(Math.random()<(law?.9:(t.te>=6||t.br>=7)?.6:.25))robHurt(n,(law?1.4:1)*((w&&w.l)?1:.8)); }
+  }
+}
+/* ---- a held-up victim shows what they carry: their things on the left, your pack on the right. Click a thing then a pack slot, or shift-click to send it straight to the pack; nothing moves if it will not fit. ---- */
+function lootOpen(n,V,src,line){ talkClose(); G.loot={n,V,src,line,sel:-1,scroll:0}; openUI('loot'); }
+function lootFinish(){ const L=G.loot; G.loot=null; if(L&&L.src.done)L.src.done(); }
+function lootCash(){ const L=G.loot, P=G.pl, c=L.src.takeCash(); if(c>0){ P.cash+=c; sfx.coin&&sfx.coin(); toast('+'+fmtM(c),GRN); } }
+function lootMove(idx,slot){
+  const L=G.loot, e=L.src.it[idx]; if(!e||!ITEMS[e[0]])return; const id=e[0], st=ITEMS[id].stack; let k;
+  if(slot==null){ if(!canFit(id,e[1])){ toast('NO SPACE',RED); sfx.err(); return; } k=e[1]; addItem(id,k); }
+  else{ if(slot>=packCap())return; const sl=G.inv[slot]; if(sl&&sl.id!==id){ toast('THAT SLOT IS TAKEN',RED); sfx.err(); return; } const room=sl?st-sl.n:st; if(room<=0){ toast('NO SPACE',RED); sfx.err(); return; } k=Math.min(room,e[1]); if(sl)sl.n+=k; else G.inv[slot]={id,n:k}; }
+  e[1]-=k; if(e[1]<=0)L.src.it.splice(idx,1); if(L.src.took)L.src.took(id,k); (G.stolen||(G.stolen=[])).push({id,n:k}); L.sel=-1; sfx.pick();
+}
+function drawLoot(){
+  const L=G.loot; if(!L){ closeUI(); return; } const P=G.pl, S=L.src, pw=Math.min(UW-12,312), ph=Math.min(UH-8,172), px=(UW-pw)>>1, py=(UH-ph)>>1, lw=146, sz=14, gap=1;
+  F(0,0,UW,UH,'rgba(0,0,0,.55)'); box(px,py,pw,ph); hit(px,py,pw,ph,()=>{});
+  T('HELD UP  -  '+L.n.name+' '+(L.n.last||''),px+9,py+7,AMB); const ws=fmtM(P.cash); T(ws,px+pw-9,py+7,'#f0d878',1,2); coinIcon(px+pw-9-tw(ws)-9,py+6);
+  F(px+8,py+19,pw-16,1,'#3a3830'); T('"'+L.line+'"',px+9,py+23,DIM);
+  const rh=11, top=py+34, vis=Math.floor((ph-62)/rh), c=S.c, rows=(c>0?1:0)+S.it.length, shift=!!(KEYS_.ShiftLeft||KEYS_.ShiftRight); L.scroll=clamp(L.scroll,0,Math.max(0,rows-vis));
+  T('THEIRS',px+9,top-8,DIM); if(!rows)T('NOTHING LEFT',px+12,top+2,DIM);
+  for(let i=0;i<vis&&L.scroll+i<rows;i++){
+    const ri=L.scroll+i, y=top+i*rh, cash=c>0&&ri===0, ix=ri-(c>0?1:0), e=cash?null:S.it[ix], sel=!cash&&L.sel===ix, hv=mouse.ux>=px+9&&mouse.ux<px+9+lw&&mouse.uy>=y-1&&mouse.uy<y+rh-1;
+    if(sel)F(px+8,y-1,lw+2,rh,'rgba(224,168,74,.18)');
+    if(cash){ coinIcon(px+12,y+1); T('COINS',px+23,y+2,hv?AMB:FG); T(fmtM(c),px+9+lw-1,y+2,'#f0d878',1,2); hit(px+8,y-1,lw+2,rh,()=>lootCash()); }
+    else{ XU.drawImage(iconCv(e[0]),px+10,y); T(ITEMS[e[0]].n.slice(0,17),px+23,y+2,sel||hv?AMB:FG); if(e[1]>1)T('X'+e[1],px+9+lw-1,y+2,FG,1,2);
+      hit(px+8,y-1,lw+2,rh,()=>{ if(KEYS_.ShiftLeft||KEYS_.ShiftRight){ lootMove(ix,null); } else{ L.sel=L.sel===ix?-1:ix; sfx.tick(); } }); }
+  }
+  if(rows>vis){ const bh=Math.max(8,Math.round(vis*rh*vis/rows)), by=top+Math.round((vis*rh-bh)*L.scroll/(rows-vis)); F(px+9+lw+3,top,1,vis*rh,'#26251f'); F(px+9+lw+3,by,1,bh,'#a98a52'); }
+  const gx=px+pw-9-(HOT*(sz+gap)-gap); F(gx-6,py+30,1,ph-38,'#3a3830'); T('YOUR PACK',gx,top-8,DIM);
+  for(let i=0;i<packCap();i++){ const col=i%HOT, row=Math.floor(i/HOT), x=gx+col*(sz+gap), y=top+row*(sz+gap)+(row>0?3:0);
+    slotBox(x,y,sz,i,false);
+    hit(x,y,sz,sz,()=>{ if(shift&&G.inv[i]){ shiftMove(i); G.invSel=-1; sfx.tick(); return; } if(L.sel>=0){ lootMove(L.sel,i); return; } if(G.invSel<0){ if(G.inv[i])G.invSel=i; } else if(G.invSel===i)G.invSel=-1; else{ slotSwap(G.invSel,i); G.invSel=-1; } sfx.tick(); });
+  }
+  const by=py+ph-15; let bx=px+9;
+  if(L.sel>=0&&S.it[L.sel])bx+=btn(bx,by,'TAKE',()=>lootMove(L.sel,null))+3;
+  bx+=btn(bx,by,'TAKE ALL',()=>{ if(S.c>0)lootCash(); for(let i=0;i<S.it.length;){ const e=S.it[i]; if(e&&ITEMS[e[0]]&&canFit(e[0],e[1]))lootMove(i,null); else i++; } if(S.it.length)toast('SOME THINGS WILL NOT FIT',RED); })+3;
+  btn(bx,by,'LET THEM GO',()=>closeUI());
+  T(L.sel>=0?'NOW CLICK A PACK SLOT, OR TAKE':'CLICK A THING, THEN A PACK SLOT. SHIFT-CLICK SENDS IT STRAIGHT IN',px+9,py+ph-26,DIM);
+}
+/* ---- the robbed one keeps shouting: neighbours turn, the law is told, and the longer it goes on the worse the case gets ---- */
+function shoutStart(n){ n.shout={N:0,next:T_+.6,sig:outfitSig(G.pl),item:heldId()}; }
+function shoutTick(){
+  const P=G.pl; if(!P||G.dead)return; const V0=robNearV(P), list=[];
+  for(const V of G.vlist){ if(!V.active)continue; for(const n of V.npcs)if(n.shout)list.push([V,n]); }
+  for(const w of (G.wand||[]))if(w.shout)list.push([V0,w]);
+  for(const [V,n] of list){
+    const s=n.shout; if(!V||s.N>=16||n.hp<=0){ n.shout=null; continue; } if(n.inside||n.sleeping||T_<s.next)continue;
+    s.N++; s.next=T_+2.2+Math.random()*1.4; n.dirLock=1; V.alert=100;
+    if(!G.in&&Math.hypot(P.x-n.x,P.y-n.y)<14&&s.N%3===1)toast(n.name+': '+pickR(['THIEF! I HAVE BEEN ROBBED!','HELP! GUARDS! HELP!','STOP THAT THIEF!']),RED);
+    shoutAlert(V,n,'theft');
+    if(n.wanderer||!n.mem)continue;
+    if(s.N===2||s.N===6||s.N===11){ n.cSig=s.sig; n.cItem=s.item; n.cLast={x:n.x,y:n.y}; const law=n.job==='guard'||!!n.militia; reportCrime(V,n,law?4:s.N>=6?4:3,'loot',law); }
+    if(s.N===4||s.N===9){ const w=bestRec(V); if(w)for(const g of V.npcs){ if(isResp(V,g)&&!g.inside&&!g.sleeping&&!g.hunt&&Math.hypot(g.x-n.x,g.y-n.y)<40)tellResp(V,g,w); } }
   }
 }
 /* a shop: the till, the shelves and whatever the keeper is carrying */
@@ -5456,13 +5509,14 @@ function robShop(n,V){
   n.mem.met=Math.max(1,n.mem.met||0); n.mem.theft=(n.mem.theft||0)+1; n.talk=false; panicWake(IN,IN.q.x,IN.q.y,12);
   IN.heat=(IN.heat||0)+2.5; IN.looted=(IN.looted||0)+1; IN.loot=1; IN.sig=IN.sig||outfitSig(P);
   if(ok){
-    let amt=till.c; P.cash+=amt; till.rec.c=0; till.rec.pop=Math.max(.2,till.rec.pop-.3); const got=[];
+    till.rec.pop=Math.max(.2,till.rec.pop-.3); const items=[];
     const pick=left.map(k=>({k,s:itemVal(k)*(.4+Math.random()*1.2)})).sort((x,y)=>y.s-x.s), nk=1+Math.floor(Math.random()*3)+(till.cap>250?1:0);
-    for(const e of pick.slice(0,nk)){ let take=Math.min(q[e.k],1+Math.floor(Math.random()*3)); while(take>0&&!canFit(e.k,take))take--; if(take>0){ addItem(e.k,take); q[e.k]-=take; got.push(take+' '+ITEMS[e.k].n); (G.stolen||(G.stolen=[])).push({id:e.k,n:take}); } }
-    const res=robTake(pu); pu.r=1; pu.t=G.whrs; amt+=res.amt; for(const g of res.got)got.push(g);
-    sfx.coin&&sfx.coin(); toast('ROBBED THE '+BT[b.t].n+'  +'+fmtM(amt)+(got.length?'  '+got.join(', '):''),AMB,true);
+    for(const e of pick.slice(0,nk)){ const take=Math.min(q[e.k],1+Math.floor(Math.random()*3)); if(take>0)items.push([e.k,take]); }
+    for(const e of pu.it)items.push(e); pu.r=1; pu.t=G.whrs;
+    const src={it:items, get c(){ return till.rec.c+pu.c; }, takeCash(){ const c=till.rec.c+pu.c; till.rec.c=0; pu.c=0; return c; }, took(id,k){ if(q[id]!==undefined)q[id]=Math.max(0,q[id]-k); const e=pu.it.find(x=>x[0]===id); if(e){ e[1]-=k; if(e[1]<=0)pu.it.splice(pu.it.indexOf(e),1); } }};
+    toast('YOU ROBBED THE '+BT[b.t].n,AMB,true);
     n.mem.op=Math.max(-100,n.mem.op-45); n.angry=70; if(V)vlog(V,"THE "+BT[b.t].n+" WAS ROBBED AT WEAPON POINT. THE TILL IS EMPTY.");
-    robEnd(t.br<=5?pickR(["TAKE THE TILL! JUST DO NOT HURT ANYONE!","THE MONEY IS IN THE DRAWER! TAKE IT AND GO!","PLEASE, I HAVE A FAMILY! TAKE WHAT YOU WANT!"]):pickR(["FINE. TAKE IT. THE GUARD WILL HEAR OF THIS.","YOU WILL NEVER SET FOOT IN MY SHOP AGAIN."]));
+    shoutStart(n); lootOpen(n,V,src,t.br<=5?pickR(["TAKE THE TILL! JUST DO NOT HURT ANYONE!","THE MONEY IS IN THE DRAWER! TAKE IT AND GO!","PLEASE, I HAVE A FAMILY! TAKE WHAT YOU WANT!"]):pickR(["FINE. TAKE IT. THE GUARD WILL HEAR OF THIS.","YOU WILL NEVER SET FOOT IN MY SHOP AGAIN."]));
     robFlee(a); robAlarm(IN,a);
   } else{
     toast(n.name+' DEFENDS THE SHOP',RED,true); n.mem.op=Math.max(-100,n.mem.op-30); n.angry=80; robEnd(pickR(["NOT IN MY SHOP, THIEF!","GET OUT OF MY SHOP!","YOU PICKED THE WRONG SHOP!"]));
@@ -5478,9 +5532,9 @@ function robWand(w){
   w.mem.met=Math.max(1,w.mem.met||0); w.mem.theft=(w.mem.theft||0)+1; w.mem.robbed=G.whrs; w.talk=false;
   if(ok){
     let stash=0; if((t.ho<=3||w.thief)&&w.cash>20&&Math.random()<.6){ stash=Math.round(w.cash*.3); w.cash-=stash; }
-    const pu={c:w.cash,it:w.bag.map(e=>e.slice())}, res=robTake(pu); w.cash=pu.c+stash; w.bag=pu.it; if(!w.bag.length)w.poor=1; w.hun=Math.min(100,(w.hun||0)+(res.got.length?15:0));
-    sfx.coin&&sfx.coin(); toast('ROBBED '+w.name+'  +'+fmtM(res.amt)+(res.got.length?'  '+res.got.join(', '):''),AMB,true);
-    w.mem.op=Math.max(-100,w.mem.op-45); w.angry=60; robEnd(robSay(w,'ok')); wAggro(w); if(V)witnessScan(V,'theft',2);
+    const src={it:w.bag, get c(){ return w.cash; }, takeCash(){ const c=w.cash; w.cash=0; return c; }, done(){ w.cash+=stash; if(!w.bag.length&&w.cash<=0)w.poor=1; }};
+    toast('YOU ROBBED '+w.name,AMB,true);
+    w.mem.op=Math.max(-100,w.mem.op-45); w.angry=60; shoutStart(w); lootOpen(w,V,src,robSay(w,'ok')); wAggro(w); if(V)witnessScan(V,'theft',2);
   } else{
     toast(w.name+' FIGHTS BACK',RED,true); w.mem.op=Math.max(-100,w.mem.op-30); w.angry=80; robEnd(robSay(w,'fail')); wAggro(w);
     if(V)witnessScan(V,'assault',2);
@@ -5574,7 +5628,7 @@ function oddScan_(dt){
   if(hot&&T_-(G._oddToast||0)>10){ G._oddToast=T_; toast('PEOPLE ARE WATCHING YOU',RED,true); sfx.err(); }
 }
 function bodyTick(dt){
-  oddScan(dt);
+  oddScan(dt); try{ shoutTick(); }catch(e){ console.error(e); }
   const P=G.pl, B=G.bodies||[], blood=G.blood||[];
   for(let i=B.length-1;i>=0;i--){ const b=B[i], age=G.whrs-b.t0;
     if(age>95){ B.splice(i,1); continue; }
@@ -5787,13 +5841,8 @@ function inspectDecide(V,n,b,d){
   const near=!G.in&&Math.hypot(P.x-n.x,P.y-n.y)<12, nm=it.n+(d.n>1?' X'+d.n:'');
   (n.mem.drops||(n.mem.drops=[])).push({id:d.id,h:G.whrs,by:b.saw?'you':null}); if(n.mem.drops.length>4)n.mem.drops.shift();   // they remember it, and whether they saw who dropped it
   const lift=()=>{ const i=G.drops.indexOf(d); if(i>=0)G.drops.splice(i,1); d.claim=null; };
-  if(d.stolen){                                                          // stolen goods lying about: that goes to the law, with a description only if they saw who dropped it
-    lift(); n.cItem=d.id; n.cLast={x:d.x,y:d.y}; n.cSig=b.saw?(d.sig||outfitSig(P)):false; n.busy=null; n.spd=1.15+(hash3(n.id,1,1)%50)/100;
-    if(near)toast(n.name+' FOUND '+nm+(b.saw?' AND SAW WHO DROPPED IT':'  -  STOLEN GOODS'),RED,true);
-    if(law||!V.lawB)reportCrime(V,n,2,'theft',true); else{ startReport(V,n,2,'theft'); n.busy=n.busy||{k:'report',sev:2,kind:'theft'}; }
-    return;
-  }
-  const pRep=clamp(.12+t.ho*.05+(law?.5:0),.05,.85), pTake=clamp((.55-t.ho*.04+((n.job==='none'||n.homeless)?.15:0))*(b.saw?.5:1),.05,.7), r=Math.random();
+  // nothing lying on the ground is a crime: anyone may own almost anything, so it is only ever lost property, found and handed in or kept
+  const pRep=clamp(.12+t.ho*.05+(law?.6:0)+(d.stolen?.1:0),.05,.9), pTake=clamp((.55-t.ho*.04+((n.job==='none'||n.homeless)?.15:0))*(b.saw?.5:1),.05,.7), r=Math.random();
   if(r<pRep){                                                            // lost property: they carry it to the law house
     lift(); const dest=lawDest(V);
     if(dest&&!law&&!(V.lawB&&n.inside===V.lawB.id)){ n.busy={k:'handin',id:d.id,n:d.n}; routeTo(V,n,dest); n.spd=1.6; } else{ handIn(V,n,d.id,d.n); inspectEnd(V,n,null); }
