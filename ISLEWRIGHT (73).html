@@ -1421,6 +1421,7 @@ function drawPrompt(){
   else if(it.k==='body'){ rows.push({k:eK,t:'GRAB',id:null,tx:it.o.name+'\'S BODY'}); }
   else if(it.k==='npc'){ rows.push({k:eK,t:(it.o.sleep||it.o.sleeping)?'WAKE':'TALK TO',id:null,tx:it.o.name});  }
   else if(it.k==='field'){ rows.push({k:eK,t:'TAKE',id:it.info.id,x:'X'+it.info.n,tx:ITEMS[it.info.id].n}); rows.push({warn:'NOT YOURS - SOMEONE MAY SEE'}); }
+  else if(it.k==='bench')rows.push({k:eK,t:it.sit?'STAND UP':'SIT DOWN',id:null,x:'',tx:''});
   else if(it.k==='camp')rows.push({k:eK,t:it.o.fuel>0?'COOK OR REST':'LIGHT THE FIRE',id:it.o.fuel>0?null:'branch',x:it.o.fuel>0?'':'X1',tx:it.o.fuel>0?'':'BRANCH'});
   if(!rows.length)return;
   let w=0; for(const r of rows){ if(r.warn||r.info){ w=Math.max(w,tw(r.warn||r.info)); continue; } const lw=tw(r.k)+5+4+tw(r.t)+(r.id?4+10+3+tw(r.tx)+(r.x?4+tw(r.x):0):(r.tx?4+tw(r.tx):0)); if(lw>w)w=lw; }
@@ -3834,7 +3835,7 @@ function clearWanted(){ for(const w of (G.wand||[]))w.hostile=0;                
 function respawn(){
   const P=G.pl; let V=null,bd=1e9; for(const W of G.vlist){ const d=Math.hypot(W.cx-P.x,W.cy-P.y); if(d<bd){ bd=d; V=W; } }
   let x,y; if(V){ const d=V.lawB?doorOf(V,V.lawB.id):(V.plazaSpots&&V.plazaSpots[0]?V.plazaSpots[0]:{x:V.cx,y:V.cy}); x=d.x; y=d.y+(V.lawB?1:0); } else{ const cp=G.camps.length?G.camps[G.camps.length-1]:null; x=cp?cp.x+.5:G.start[0]+.5; y=cp?cp.y+1.6:G.start[1]+.5; }
-  P.x=x; P.y=y; P.vx=P.vy=0; P.hp=60; P.hc=45; P.sc=55; P.st=50; P.food=55; P.tired=0; P.mhp=60+40*P.hc/100; P.mst=60+40*P.sc/100; P.hurt=0;
+  P.sitB=0; P.x=x; P.y=y; P.vx=P.vy=0; P.hp=60; P.hc=45; P.sc=55; P.st=50; P.food=55; P.tired=0; P.mhp=60+40*P.hc/100; P.mst=60+40*P.sc/100; P.hurt=0;
   for(let i=0;i<G.inv.length;i++)G.inv[i]=null; P.cash=0; G.bankA={}; G.stolen=[]; G.stand=null; G.lethal=null; G.esc=null; G.court=null; G.cust=null; G.talk=null;          // everything you carried is gone, and so are your savings
   if(G.in){ ibSave(G.in); for(const a of G.in.actors){ a.n._a=null; a.n.hid=0; } G.in=null; } G.tr=null; G.dead=0; cam.x=P.x*TS; cam.y=P.y*TS-5;
   clearWanted(); closeUI(); P.moving=false; P.swing=0; G.sleep=null; G.brk=null; G.fish=null; G.washing=null;
@@ -3879,6 +3880,8 @@ function findInteract(){
   for(const cp of G.camps)consider(cp,'camp',cp.x+.5,cp.y+.6,1.6);
   for(const dp of G.drops)consider(dp,'drop',dp.x,dp.y,1.2);
   if(!P.carry)for(const bd of (G.bodies||[]))if(!bd.carry&&!bd.in)consider(bd,'body',bd.x,bd.y-.1,1.5);
+  if(P.sitB){ const sb=G.bmap.get(P.sitB); if(sb)return {k:'bench',o:sb,sit:1}; P.sitB=0; }
+  for(let ty=y0-2;ty<=y0+2;ty++)for(let tx=x0-2;tx<=x0+2;tx++){ const id=G.occ.get(tk(tx,ty)); const bb=id?G.bmap.get(id):null; if(bb&&bb.t==='bench'&&bb.x===tx&&bb.y===ty)consider(bb,'bench',tx+.5,ty+1,1.8); }
   const seenB=new Set();
   for(let ty=y0-2;ty<=y0+2;ty++)for(let tx=x0-2;tx<=x0+2;tx++){ const id=G.occ.get(tk(tx,ty)); if(!id||seenB.has(id))continue; seenB.add(id); const b=G.bmap.get(id); if(b&&b.t==='field'&&fieldReady(b))consider(b,'field',b.x+b.w/2,b.y+b.h/2+.2,2.4); }
   for(const V of G.vlist){ if(!V.active)continue; for(const n of V.npcs){ if(n.inside||n.hid)continue; consider(n,'npc',n.x,n.y-.3,1.9); } }
@@ -3892,8 +3895,10 @@ function findInteract(){
 }
 function gain(id,n){ if(!canFit(id,n)){ toast('PACK FULL',RED); sfx.err(); return false; } addItem(id,n); toast('+'+n+' '+ITEMS[id].n,GRN); return true; }
 function markPicked(n){ const key=tk(n.x,n.y); G.picked.set(key,G.whrs); G.pcnt.set(key,(G.pcnt.get(key)||0)+1); }
+function benchStand(){ const P=G.pl, b=G.bmap.get(P.sitB); P.sitB=0; if(b){ P.x=b.x+.5; P.y=b.y+1.3; } }
+function benchSit(b){ const P=G.pl; if(P.carry||G.in)return; const occ=G.vlist.some(V=>V.npcs.some(n=>n.sitB===b.id&&n.sitSlot===0)), occ2=G.vlist.some(V=>V.npcs.some(n=>n.sitB===b.id&&n.sitSlot===1)); const sl=occ&&!occ2?1:0; P.sitB=b.id; P.x=b.x+.5+(sl?.22:-.22); P.y=b.y+1.12; P.dir=0; P.vx=P.vy=0; sfx.tick(); }
 function interact(){
-  const it=G.near; if(!it)return; const o=it.o; if(it.k==='bodydrop'){ releaseBody(); return; } if(it.k==='wash'){ clStartWash(); return; } if(INK.has(it.k)){ interactX(it); return; }
+  const it=G.near; if(!it)return; const o=it.o; if(it.k==='bench'){ if(it.sit)benchStand(); else benchSit(o); return; } if(it.k==='bodydrop'){ releaseBody(); return; } if(it.k==='wash'){ clStartWash(); return; } if(INK.has(it.k)){ interactX(it); return; }
   if(it.k==='node'){
     if(it.chop){ chopHit(o); return; }
     const rc=o.t===4?workCost(2.2):0; if(rc&&!staOk(rc))return;
@@ -4369,7 +4374,8 @@ function buildVillage(site){
   // lamp posts: always beside the road, never on it, never in front of a door, spaced so every stretch is lit
   { const lampPts=[]; for(const b of V.B)if(b.t==='lamp')lampPts.push([b.x,b.y]);
     const nearDoor=(x,y,r)=>{ for(const [id,d] of V.doors){ if(Math.abs(d.x-(x+.5))<r&&Math.abs(d.y-(y+.5))<2.2)return true; } return false; };
-    const tryLamp=(x,y,gap,doorR)=>{ const k=tk(x,y); if(!free(x,y)||!grassAt(x,y)||G.floor.has(k))return false; if(doorR&&nearDoor(x,y,doorR))return false;
+    const frontOf=(x,y)=>V.B.some(b=>b.t!=='lamp'&&b.t!=='bench'&&BT[b.t].k!=='flowerbed'&&x>=b.x-1&&x<b.x+b.w+1&&y>=b.y+b.h-1&&y<=b.y+b.h+1.5);          // the strip in front of any building
+    const tryLamp=(x,y,gap,doorR)=>{ const k=tk(x,y); if(!free(x,y)||!grassAt(x,y)||G.floor.has(k))return false; if(doorR&&nearDoor(x,y,doorR))return false; if(frontOf(x,y))return false;
       for(const q of lampPts)if(Math.hypot(q[0]-x,q[1]-y)<gap)return false; addB('lamp',x,y); mark(x,y); lampPts.push([x,y]); return true; };
     const step=[11,7,6,5][tier];
     for(const k of rows){ const yk=cy+k*ROWGAP, ys=yk+rw, yn=yk-1;
@@ -5111,7 +5117,7 @@ function destForBlk(V,n,blk){
     case 'errand': { const d=shopD(); if(d)return d; if(V.fieldSpots.length){ const fs=V.fieldSpots[Math.floor(r*V.fieldSpots.length)]; return {x:fs.x+(r-.5)*1.2,y:fs.y+.5,inside:null,k:'forage'}; } return yard(); }
     case 'tavern': return tavD();
     case 'church': { const c=hasChurch(V); if(c){ const d=doorOf(V,c.id); return {x:d.x,y:d.y,inside:c.id,k:'church'}; } return plazaAt(r*997); }
-    case 'social': case 'jobhunt': { const bs=r2<.5?benchSeat():null; return bs||plazaAt(r*997); }
+    case 'social': case 'jobhunt': { const bs=r2<.75?benchSeat():null; return bs||plazaAt(r*997); }
     case 'meet': case 'visit': case 'host': {
       const mp=blk.mp, side=n.id<blk.pn?-.55:.55, host=mp.host>=0?V.nid.get(mp.host):null;
       if(mp.place==='tavern')return tavD();
@@ -7210,7 +7216,7 @@ function playerSprite(P){
 }
 function tileBlocked(tx,ty){
   if(clsAt(tx,ty)===0)return true;                                 // deep water
-  const id=G.occ.get(tk(tx,ty)); if(id){ const b=bById(id); if(b&&!BT[b.t].walk)return true; }
+  const id=G.occ.get(tk(tx,ty)); if(id){ const b=bById(id); if(b&&b.t==='bench')return false; if(b&&!BT[b.t].walk)return true; }          // a bench blocks only where it is drawn, see hitsBody
   return false;
 }
 function npcBodyAt(x,y){
@@ -7225,6 +7231,7 @@ function hitsBody(x,y){
   const x0=Math.floor(x-PBX), x1=Math.floor(x+PBX), y0=Math.floor(y-PBY), y1=Math.floor(y+PBY);
   for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){
     if(tileBlocked(tx,ty))return true;
+    { const ob=G.occ.get(tk(tx,ty)); if(ob){ const bb=bById(ob); if(bb&&bb.t==='bench'&&x+PBX>tx+.04&&x-PBX<tx+.96&&y+PBY>ty+.55&&y-PBY<ty+.96)return true; } }
     if(G.camps)for(const cp of G.camps){ if(Math.abs(cp.x-tx)<=1&&Math.abs(cp.y-ty)<=1&&x+PBX>cp.x+.22&&x-PBX<cp.x+.78&&y+PBY>cp.y+.3&&y-PBY<cp.y+.85)return true; }
     const n=nodeAt(tx,ty);
     if(n&&n.t!==5&&n.t!==8&&n.t!==9){
@@ -7241,6 +7248,7 @@ function updatePlayer(dt){
   if(!frozen){
     if(held('left')||KEYS_.ArrowLeft)ix-=1; if(held('right')||KEYS_.ArrowRight)ix+=1; if(held('up')||KEYS_.ArrowUp)iy-=1; if(held('down')||KEYS_.ArrowDown)iy+=1;
   }
+  if(P.sitB){ if(ix||iy)benchStand(); else{ ix=0; iy=0; P.dir=0; } }
   if(P.swing>0){ ix=0; iy=0; }
   const want=!!(ix||iy), d8=STEPDIRS[ix+','+iy], len=Math.hypot(ix,iy)||1; if(want){ P.dir=d8; if(G.fish)G.fish=null; }
   const nx0=ix/len, ny0=iy/len;
@@ -7287,6 +7295,7 @@ function drawPlayer(P){
   X.fillStyle='rgba(0,0,0,.28)'; X.fillRect(sx-4*z,sy-z,8*z,z); X.fillRect(sx-3*z,sy-2*z,6*z,z); X.fillRect(sx-3*z,sy,6*z,z);
   let ox=0,oy=0; if(P.swing>0){ const k=axePose(P), v=DIRVEC[P.dir]; ox=Math.round(v[0]*k.lean*.8*z); oy=Math.round(v[1]*k.lean*.5*z+(k.p>.46&&k.p<.72?z*.7:0)); }
   if(P.carry){ const cb=(G.bodies||[]).find(x=>x.id===P.carry), lf=cb&&cb.lift!==undefined?cb.lift:1; oy+=Math.round(z*(1+(1-lf)*2.5)); }       // bending under the weight, deeper while lifting
+  if(P.sitB)oy-=3*z;                                                    // seated on a bench
   if(P.swing>0)drawAxeSwing(P,sx,sy,true);
   X.drawImage(sp.cv,sx-PCX*z+ox,sy-PCY*z+oy,PCW*z,PCH*z);
   if(P.swing>0)drawAxeSwing(P,sx+ox,sy+oy,false);
