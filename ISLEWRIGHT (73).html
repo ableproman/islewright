@@ -5180,9 +5180,9 @@ function greetTick(V,n,dt){                                           // now and
   if(!g){
     n.gtT=(n.gtT||0)-dt; if(n.gtT>0)return; n.gtT=8+Math.random()*8;
     if(!P||G.in||G.ui||G.talk||G.dead||G.sleep||G.stand||G.cust||G.tr||P.carry||G.greeter||T_<(G.greetCd||0)||G.tod<8||G.tod>20)return;
-    if(n.inside||n.busy||n.talk||n.hunt||n.shopQ||n.shopping||n.sleeping||n.homeless||n.age<14||n.job==='guard'||n.militia||n.st==='walk'||!n.mem||n.mem.op<-5||(n.chat&&G.whrs<n.chat.until))return;
-    const d=Math.hypot(P.x-n.x,P.y-n.y); if(d<4||d>13||!npcSees(n,P,13)||matchedRec(V))return;
-    if(Math.random()>.014*(.5+(n.social||0)))return;
+    if(n.inside||n.busy||n.talk||n.hunt||n.shopQ||n.shopping||n.sleeping||n.homeless||n.age<14||n.job==='guard'||n.militia||!n.mem||n.mem.op<-5||(n.chat&&G.whrs<n.chat.until))return;
+    const d=Math.hypot(P.x-n.x,P.y-n.y); if(d<3||d>16||!npcSees(n,P,16)||matchedRec(V))return;
+    if(Math.random()>.02*(.5+(n.social||0)))return;
     n.greet={t0:T_,still:0,pt:0}; G.greeter=n; return;
   }
   const bad=!P||G.in||G.ui&&!G.talk||G.dead||G.sleep||G.stand||G.cust||G.tr||n.hunt||n.busy||(G.talk&&G.talk.n!==n)||T_-g.t0>28;
