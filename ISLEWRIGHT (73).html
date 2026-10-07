@@ -753,8 +753,28 @@ function houseSprite(w,h,o){
     if(o.steeple){ const sx=Math.floor(w*TS/2)-5; R(c,sx,9,10,roofH-5,S_(wc,.9)); R(c,sx,9,1,roofH-5,S_(wc,1.15)); R(c,sx+8,9,2,roofH-5,S_(wc,.7)); R(c,sx+3,roofH-4,4,5,'#3a3a42'); roofPaint(c,sx-1,1,12,8,rc,0,5,0); R(c,sx+4,0,2,3,S_(wc,1.3)); R(c,sx+3,1,4,1,S_(wc,1.3)); }
   });
 }
+function bankSprite(b){                                              // a stone bank with a pediment, four columns, steps, a plaque and a gold coin
+  const w=b.w, W=w*TS, PW=W+4, faceH=28, roofH=15, PH=faceH+roofH+6;
+  return sprite('bank'+w,PW,PH,(c,s)=>{
+    s.ox=0; s.oy=PH-2; s.wins=[]; c.globalAlpha=.3; R(c,3,PH-5,W,5,'#000'); c.globalAlpha=1;
+    const mid=W/2, STN='#d8d4c8', STD='#a8a498', STL='#ece8dc', GOLD='#e8c030', GREEN='#2e5a3a';
+    R(c,1,roofH,W-2,faceH,STN); R(c,1,roofH,W-2,1,STL); for(let y=roofH+3;y<roofH+faceH-4;y+=4)R(c,1,y,W-2,1,'rgba(0,0,0,.06)');
+    R(c,0,roofH-3,W,4,STL); R(c,0,roofH,W,1,STD); R(c,0,roofH+1,W,1,'rgba(0,0,0,.2)');                              // cornice
+    for(let r=0;r<roofH-3;r++){ const half=Math.round((mid-2)*(r+1)/(roofH-3)); R(c,mid-half,r,half*2,1,r<2?STL:'#cfcabd'); R(c,mid-half,r,1,1,STD); R(c,mid+half-1,r,1,1,STD); }   // pediment
+    R(c,mid-5,roofH-9,10,6,GREEN); R(c,mid-4,roofH-8,8,4,'#3a7a4a'); disc(c,mid,roofH-6,2,GOLD); R(c,mid-1,roofH-7,2,1,'#fff0a0');   // coin in the tympanum
+    const cols=[6,18,W-22,W-10];
+    for(const x of cols){ R(c,x-1,roofH+2,6,2,STL); R(c,x,roofH+4,4,faceH-12,'#ece8dc'); R(c,x,roofH+4,1,faceH-12,'#fff'); R(c,x+3,roofH+4,1,faceH-12,STD); R(c,x-1,roofH+faceH-8,6,2,STL); R(c,x-1,roofH+faceH-6,6,1,STD); }
+    for(const wx of [11,W-17]){ const wy=roofH+8; R(c,wx-1,wy-1,8,16,STD); R(c,wx,wy,6,14,'#6a8aa0'); R(c,wx,wy,6,4,'#8aaac0'); R(c,wx+2,wy,1,14,'#3a3a3a'); R(c,wx+4,wy,1,14,'#3a3a3a'); R(c,wx,wy+6,6,1,'#3a3a3a'); s.wins.push([wx,wy,6,14]); }
+    const dx=Math.floor(mid)-6, dy=PH-6-15; R(c,dx-1,dy-1,14,16,STD); R(c,dx,dy,12,15,'#2a4a30'); R(c,dx+5,dy,2,15,'#14281a'); R(c,dx,dy,12,1,'#4a7a52'); R(c,dx+3,dy+8,1,2,GOLD); R(c,dx+8,dy+8,1,2,GOLD);   // double doors
+    R(c,mid-11,roofH+5,22,9,GREEN); R(c,mid-11,roofH+5,22,1,GOLD); R(c,mid-11,roofH+13,22,1,GOLD);                 // plaque
+    const F={B:['110','101','110','101','110'],A:['010','101','111','101','101'],N:['101','111','111','111','101'],K:['101','101','110','101','101']};
+    let lx=mid-8; for(const ch of 'BANK'){ const g=F[ch]; for(let j=0;j<5;j++)for(let i=0;i<3;i++)if(g[j][i]==='1')R(c,lx+i,roofH+7+j,1,1,GOLD); lx+=4; }
+    R(c,3,PH-6,W-4,2,STL); R(c,1,PH-4,W-2,2,STD); R(c,0,PH-3,W,1,'#7a766a');                                              // steps
+  });
+}
 function specialSprite(b){
   const k=BT[b.t].k, wc=b.wc, rc=b.rc, st=b.stage||0;
+  if(b.t==='bank')return bankSprite(b);
   if(k==='tent') return sprite('tent'+wc+'_'+rc,24,20,(c,s)=>{ s.ox=4; s.oy=18; ell(c,12,17,10,3,'rgba(0,0,0,.28)'); for(let r=0;r<14;r++){ const w=Math.round(10*(r+1)/14); R(c,12-w,3+r,w,1,hx(sh(wc,1.1-r*.01))); R(c,12,3+r,w,1,hx(sh(wc,.85-r*.005))); } R(c,10,12,4,5,'#3a2a20'); R(c,11,13,2,4,'#1a1210'); R(c,12,1,1,3,'#6a4a2a'); R(c,12,1,4,2,hx(rc)); R(c,2,16,20,1,'rgba(0,0,0,.25)'); });
   if(k==='fire') return sprite('fire',16,14,(c,s)=>{ s.ox=-0; s.oy=14; ell(c,8,11,6,2,'rgba(0,0,0,.28)'); for(let i=0;i<9;i++){ const a=i/9*6.283; R(c,8+Math.round(Math.cos(a)*5),9+Math.round(Math.sin(a)*2.5),2,2,i%2?'#7a7872':'#8c8a84'); } R(c,4,10,8,2,'#4a2e1a'); R(c,5,9,6,1,'#6a4226'); R(c,6,10,4,2,'#2a1a10'); });
   if(k==='well') return sprite('well'+wc,16,24,(c,s)=>{ s.oy=22; ell(c,8,19,7,3,'rgba(0,0,0,.28)'); R(c,2,12,12,8,hx(sh(0x8c8a84,1))); R(c,2,12,12,2,'#a8a69e'); R(c,2,18,12,2,'#5c5b57'); R(c,4,14,8,4,'#1a4a6a'); R(c,5,15,4,1,'#4a8ab0'); R(c,2,5,1,9,'#5a3a22'); R(c,13,5,1,9,'#5a3a22'); for(let r=0;r<5;r++)R(c,1+r,r+1,14-r*2,1,hx(sh(rc,.9+r*.05))); R(c,7,6,1,5,'#8a6a3a'); R(c,6,10,3,2,'#6a4a2a'); });
@@ -893,6 +913,7 @@ const BT={
   cooper:{n:'COOPERAGE',cat:1,w:2,h:2,k:'workshop',cost:{},work:9,tier:0,wc:0xa87a4a,rc:0x6a4a2a,tx:1,logs:1,door:'single'},
   tannery:{n:'TANNERY',cat:1,w:3,h:2,k:'workshop',cost:{},work:10,tier:0,wc:0x8a6a4a,rc:0x5a4030,tx:1,rs:1,door:'double'},
   fishmarket:{n:'FISH MARKET',cat:1,w:3,h:1,k:'market',cost:{},work:6,tier:0,wc:0xc8d8e0,rc:0x3a6aa8,awning:0x3a6aa8,tx:1,door:'none',chim:false,rh:12},
+  bank:{n:'BANK',cat:1,w:4,h:2,k:'shop',cost:{},work:9,tier:0,wc:0xd8d4c8,rc:0x2e5a3a,sign:1,tx:2,door:'double'},
   jeweler:{n:'JEWELER',cat:1,w:2,h:2,k:'shop',cost:{},work:9,tier:0,wc:0xe8dcc8,rc:0x3a3a42,awning:0xd8b040,sign:1,tx:2,door:'single'},
   chandler:{n:'CHANDLER',cat:1,w:2,h:2,k:'shop',cost:{},work:8,tier:0,wc:0xf0e6c8,rc:0xc8a850,awning:0xe8c860,tx:0,door:'single'},
   quarry:{n:'QUARRY',cat:1,w:3,h:2,k:'quarry',cost:{},work:8,tier:0,walk:1,wc:0x8a8880,rc:0},
@@ -1002,8 +1023,8 @@ function collectItems(){
   }
   for(const b of G.B){ const x0=b.x*TS, y0=b.y*TS, x1=x0+b.w*TS, y1=y0+b.h*TS; if(x1<vx0||x0>vx1||y1<vy0||y0>vy1)continue; items.push({k:1,o:b,y:BT[b.t].walk&&BT[b.t].k!=='fire'&&BT[b.t].k!=='bench'?y0:y1}); }
   for(const p of G.P){ const px=p.x*TS, py=p.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; items.push({k:2,o:p,y:py+1}); }
-  for(const V of G.vlist){ if(!V.active)continue; for(const n of V.npcs){ if(n.inside||n.hid)continue; const px=n.x*TS, py=n.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; items.push({k:6,o:n,y:py+1}); } }
-  if(G.pl)items.push({k:3,o:G.pl,y:G.pl.y*TS+1});
+  for(const V of G.vlist){ if(!V.active)continue; for(const n of V.npcs){ if(n.inside||n.hid)continue; const px=n.x*TS, py=n.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; let dy=py+1; if(n.sitB&&n.st!=='walk'){ const sb=G.bmap.get(n.sitB); if(sb)dy=(sb.y+1)*TS+2; } items.push({k:6,o:n,y:dy}); } }
+  if(G.pl){ let py3=G.pl.y*TS+1; if(G.pl.sitB){ const sb=G.bmap.get(G.pl.sitB); if(sb)py3=(sb.y+1)*TS+2; } items.push({k:3,o:G.pl,y:py3}); }
   if(G.camps)for(const cp of G.camps){ const px=cp.x*TS, py=cp.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; items.push({k:4,o:cp,y:py+12}); }
   if(G.bodies)for(const bd of G.bodies){ if(bd.in)continue; const px=bd.x*TS, py=bd.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; items.push({k:10,o:bd,y:py+(bd.carry?(bd.carry==='p'&&G.pl&&G.pl.dir>=3&&G.pl.dir<=5?-14:14):0)}); }
   if(G.sites)for(const S of G.sites){ const px=S.x*TS, py=S.y*TS; if(px<vx0-60||px>vx1+60||py<vy0-60||py>vy1+60)continue; items.push({k:12,o:S,y:py+8}); }
@@ -1400,6 +1421,7 @@ function drawPrompt(){
   else if(it.k==='body'){ rows.push({k:eK,t:'GRAB',id:null,tx:it.o.name+'\'S BODY'}); }
   else if(it.k==='npc'){ rows.push({k:eK,t:(it.o.sleep||it.o.sleeping)?'WAKE':'TALK TO',id:null,tx:it.o.name});  }
   else if(it.k==='field'){ rows.push({k:eK,t:'TAKE',id:it.info.id,x:'X'+it.info.n,tx:ITEMS[it.info.id].n}); rows.push({warn:'NOT YOURS - SOMEONE MAY SEE'}); }
+  else if(it.k==='bench')rows.push({k:eK,t:it.sit?'STAND UP':'SIT DOWN',id:null,x:'',tx:''});
   else if(it.k==='camp')rows.push({k:eK,t:it.o.fuel>0?'COOK OR REST':'LIGHT THE FIRE',id:it.o.fuel>0?null:'branch',x:it.o.fuel>0?'':'X1',tx:it.o.fuel>0?'':'BRANCH'});
   if(!rows.length)return;
   let w=0; for(const r of rows){ if(r.warn||r.info){ w=Math.max(w,tw(r.warn||r.info)); continue; } const lw=tw(r.k)+5+4+tw(r.t)+(r.id?4+10+3+tw(r.tx)+(r.x?4+tw(r.x):0):(r.tx?4+tw(r.tx):0)); if(lw>w)w=lw; }
@@ -1448,9 +1470,12 @@ function drawInv(){
   }else{ let y=py+24; for(const l of wrapT('CLICK AN ITEM, THEN ANOTHER SLOT TO MOVE OR STACK IT. PRESS A HOTBAR KEY TO SEND IT STRAIGHT TO THAT SLOT.',Math.floor(rw/4))){ T(l,rx,y,DIM); y+=8; } }
 }
 /* ---- crafting: tools and materials, made anywhere ---- */
-function craftOk(r){ if(r.tool&&countItem(r.tool)<1)return false; for(const k in r.inp)if(countItem(k)<r.inp[k])return false; return true; }
+const craftOk1=r=>{ if(r.tool&&countItem(r.tool)<1)return false; for(const k in r.inp)if(countItem(k)<r.inp[k])return false; return true; };
+const craftVariants=r=>[r].concat(r.alts||[]);                              // one entry per item; other ways to make it are variants of the same entry
+const craftPick=r=>craftVariants(r).find(craftOk1)||r;
+function craftOk(r){ return craftVariants(r).some(craftOk1); }
 function doCraft(i){
-  const r=CRAFTS[i]; if(!craftOk(r)){ toast('MISSING MATERIALS',RED); sfx.err(); return; }
+  const r0=CRAFTS[i]; if(!craftOk(r0)){ toast('MISSING MATERIALS',RED); sfx.err(); return; } const r=craftPick(r0);
   const spare={}; for(const k in r.inp)takeItem(k,r.inp[k]);
   if(!canFit(r.out,r.nm)){ for(const k in r.inp)addItem(k,r.inp[k]); toast('PACK FULL',RED); sfx.err(); return; }
   addItem(r.out,r.nm); toast('MADE '+ITEMS[r.out].n+(r.nm>1?' X'+r.nm:''),GRN); sfx.place();
@@ -1468,7 +1493,7 @@ function drawCraft(){
   }
   if(rows>vis){ const bh=Math.max(8,Math.round((ph-50)*vis/rows)), by=py+30+Math.round((ph-50-bh)*G.cscroll2/(rows-vis)); F(px+9+lw+3,py+30,1,ph-50,'#26251f'); F(px+9+lw+3,by,1,bh,'#a98a52'); }
   F(rx-5,py+22,1,ph-30,'#3a3830');
-  const r=CRAFTS[G.csel], od=ITEMS[r.out], mc=Math.floor(rw/4); let y=py+23;
+  const r=craftPick(CRAFTS[G.csel]), od=ITEMS[r.out], mc=Math.floor(rw/4); let y=py+23;
   XU.drawImage(iconCv(r.out),rx,y); T(od.n+(r.nm>1?'  X'+r.nm:''),rx+14,y+1,AMB); y+=12;
   for(const l of wrapT(od.d,mc)){ T(l,rx,y,FG); y+=8; } y+=3;
   if(od.use)y+=drawEffects(rx,y,od.use,true,rw)+3;
@@ -1496,8 +1521,8 @@ let CATIDX=null;
 function catBuild(){
   if(CATIDX)return CATIDX; const made={}, used={};
   for(const r of RECIPES)(made[r.out]=made[r.out]||[]).push({r,k:'cook'});
-  for(const r of CRAFTS)(made[r.out]=made[r.out]||[]).push({r,k:'craft'});
-  for(const r of [...RECIPES,...CRAFTS])for(const k in r.inp)(used[k]=used[k]||new Set()).add(r.out);
+  for(const r0 of CRAFTS)for(const r of craftVariants(r0))(made[r.out]=made[r.out]||[]).push({r,k:'craft'});
+  for(const r of [...RECIPES,...CRAFTS.flatMap(craftVariants)])for(const k in r.inp)(used[k]=used[k]||new Set()).add(r.out);
   const ids=Object.keys(ITEMS).sort((a,b)=>ITEMS[a].n.localeCompare(ITEMS[b].n));
   return CATIDX={made,used,ids};
 }
@@ -1648,7 +1673,7 @@ function drawHUD(dt){
   drawMinimap(dt); drawVitals(); clHud(); drawWallet(); drawHotbar(); drawClock(); drawPrompt(); drawBubbles(); drawBanner(); drawTemp(); drawBreakBar(); drawLawHud(); drawStand(); drawCust();
   const ty=UH-34;
   toasts.forEach((t,i)=>{ XU.globalAlpha=Math.min(1,t.l); T(t.s,UW/2,ty-(toasts.length-1-i)*9,t.c,1,1); XU.globalAlpha=1; });
-  const nf_=UI.length; if(G.ui==='inv')drawInv(); else if(G.ui==='recipes')drawRecipes(); else if(G.ui==='craft')drawCraft(); else if(G.ui==='catalog')drawCatalog(); else if(G.ui==='journal')drawJournal(); else if(G.ui==='camp')drawCampMenu(); else if(G.ui==='shop')drawShop(); else if(G.ui==='wardrobe')clDrawWardrobe(); else if(G.ui==='clothes')clDrawStore(); else if(G.ui==='mark')drawMarkMenu();
+  const nf_=UI.length; if(G.ui==='inv')drawInv(); else if(G.ui==='recipes')drawRecipes(); else if(G.ui==='craft')drawCraft(); else if(G.ui==='catalog')drawCatalog(); else if(G.ui==='journal')drawJournal(); else if(G.ui==='camp')drawCampMenu(); else if(G.ui==='loot')drawLoot(); else if(G.ui==='bank')drawBank(); else if(G.ui==='shop')drawShop(); else if(G.ui==='wardrobe')clDrawWardrobe(); else if(G.ui==='clothes')clDrawStore(); else if(G.ui==='mark')drawMarkMenu();
   G.navList=(G.ui&&NAVUI.includes(G.ui))?UI.slice(nf_).filter(r=>r.fn&&r.w>=4&&r.h>=4&&r.w*r.h<UW*UH*.2&&r.h<UH*.55):null; navDraw();
   drawTalk();
   if(G.dead){ F(0,0,UW,UH,'rgba(6,0,0,.9)'); T('YOU DIED',UW/2,UH/2-26,RED,4,1); T(P.food<=0?'YOU STARVED':'',UW/2,UH/2+2,FG,1,1); btn(UW/2-tw('RESPAWN')/2,UH/2+16,'RESPAWN',()=>respawn()); }
@@ -2544,7 +2569,7 @@ function startGame(mode,size,seed,name){
   const [sx,sy]=startNearVillage()||findStart(); G.start=[sx,sy];
   for(let j=-2;j<=2;j++)for(let i=-2;i<=2;i++){ const n=nodeAt(sx+i,sy+j); if(n)removeNode(n); }
   G.pl=newPlayer(sx+.5,sy+.5);
-  addItem('campkit',1); addItem('branch',4); addItem('berries',3);
+  addItem('campkit',1); addItem('branch',4); addItem('berries',3); G.sel=HOT-1;
   zoomLimits(); cam.tz=cam.z=2; cam.x=G.pl.x*TS; cam.y=G.pl.y*TS-5; G.over=0; G.clockUntil=T_+5;
   toast('PRESS '+keyName(bk('help'))+' FOR HELP',DIM);
 }
@@ -2726,7 +2751,7 @@ function serialize(){
   const P=G.pl; flushVillageMem();
   return {ver:3,seed:G.seed,sname:G.seedName||'',name:G.name,day:G.day,tod:G.tod,dn:G.dn,whrs:G.whrs,start:G.start,removed:[...G.removed],planted:[...G.planted],picked:[...G.picked],pcnt:[...G.pcnt],journal:G.journal,vm:[...G.vmem].filter(([k,v])=>v.mem.met>0||v.mem.op||v.rumor||v.life),
     pl:{x:P.x,y:P.y,dir:P.dir,hp:P.hp,hc:P.hc,st:P.st,sc:P.sc,food:P.food,cash:P.cash,cl:P.cl},inv:G.inv.map(sl=>sl?[sl.id,sl.n]:null),sel:G.sel,pk:G.packLvl|0,camps:G.camps.map(c=>[c.x,c.y,Math.round(c.fuel),c.id]),cid:G.cid,drops:G.drops.map(d=>[d.x,d.y,d.id,d.n]),
-    cam:{x:cam.x,y:cam.y,z:cam.tz},wd:G.wand?G.wand.map(wSave):undefined,wel:G.wel?[...G.wel]:[],bd:G.bodies||[],bld:G.blood||[],gv:G.graves||[],bid:G.bid||0,wid:G.wid||0,vs:G.vst||{},gone:G.gone||[],guest:G.guest||[],ib:ibList(),sd:[...(G.sdone||[])],tn:[...(G.tdone||[])],td:[...(G.tdelay||[])],tp:[...(G.tpark||[])].map(([id,ws])=>[id,ws.map(wSave)])};
+    cam:{x:cam.x,y:cam.y,z:cam.tz},wd:G.wand?G.wand.map(wSave):undefined,wel:G.wel?[...G.wel]:[],bd:G.bodies||[],bld:G.blood||[],gv:G.graves||[],bid:G.bid||0,wid:G.wid||0,vs:G.vst||{},till:G.till||{},bank:{a:G.bankA||{},v:G.bankV||{}},gone:G.gone||[],guest:G.guest||[],ib:ibList(),sd:[...(G.sdone||[])],tn:[...(G.tdone||[])],td:[...(G.tdelay||[])],tp:[...(G.tpark||[])].map(([id,ws])=>[id,ws.map(wSave)])};
 }
 function saveGame(quiet){
   if(!G||G.demo||!G.pl)return;
@@ -2737,13 +2762,13 @@ function loadGame(){
   chunks.clear(); SPR.clear(); PCS.clear();
   G=newWorld({seed:d.seed,size:1,mode:0,name:d.name}); freshCaches();
   Object.assign(G,{day:d.day,tod:d.tod,dn:d.dn,whrs:d.whrs||0,start:d.start,seedName:d.sname||'',removed:new Set(d.removed||[]),planted:new Map(d.planted||[]),picked:new Map(d.picked||[]),pcnt:new Map(d.pcnt||[]),vmem:new Map(d.vm||[]),journal:Array.isArray(d.journal)?d.journal:[]});
-  G.ibl=new Map(d.ib||[]); G.sdone=new Set(d.sd||[]); G.tdone=new Set(d.tn||[]); G.tdelay=new Map(d.td||[]); G.tpark=new Map((d.tp||[]).map(([id,ws])=>[id,ws.map(wLoad)])); G.wel=new Map(d.wel||[]); G.bodies=d.bd||[]; G.blood=d.bld||[]; G.graves=d.gv||[]; G.bid=d.bid||0; G.wand=d.wd?d.wd.map(wLoad):undefined; G.wid=d.wid||0; G.vst=d.vs||{}; G.gone=d.gone||[]; G.guest=d.guest||[];
+  G.till=d.till||{}; G.bankA=(d.bank&&d.bank.a)||{}; G.bankV=(d.bank&&d.bank.v)||{}; G.ibl=new Map(d.ib||[]); G.sdone=new Set(d.sd||[]); G.tdone=new Set(d.tn||[]); G.tdelay=new Map(d.td||[]); G.tpark=new Map((d.tp||[]).map(([id,ws])=>[id,ws.map(wLoad)])); G.wel=new Map(d.wel||[]); G.bodies=d.bd||[]; G.blood=d.bld||[]; G.graves=d.gv||[]; G.bid=d.bid||0; G.wand=d.wd?d.wd.map(wLoad):undefined; G.wid=d.wid||0; G.vst=d.vs||{}; G.gone=d.gone||[]; G.guest=d.guest||[];
   computeBounds();
   const P=G.pl=newPlayer(d.pl.x,d.pl.y); P.dir=d.pl.dir||0; for(const k of ['hp','hc','st','sc','food'])if(d.pl[k]!==undefined)P[k]=d.pl[k]; if(d.pl.cash!==undefined)P.cash=d.pl.cash;
   P.cl=clNorm(d.pl.cl); clRefresh(P);
   P.mhp=60+40*P.hc/100; P.mst=60+40*P.sc/100;
   if(d.inv){ d.inv.forEach((e,i)=>{ if(e&&ITEMS[e[0]]&&i<INV)G.inv[i]={id:e[0],n:e[1]}; }); } else { addItem('campkit',1); addItem('branch',4); addItem('berries',3); }
-  G.sel=d.sel||0; G.packLvl=d.pk?1:0; G.cid=d.cid||0; G.camps=(d.camps||[]).map(c=>({x:c[0],y:c[1],fuel:c[2],id:c[3]})); G.drops=(d.drops||[]).filter(e=>ITEMS[e[2]]).map(e=>({x:e[0],y:e[1],id:e[2],n:e[3],t:0})); G.over=0;
+  G.sel=d.sel==null?HOT-1:d.sel; G.packLvl=d.pk?1:0; G.cid=d.cid||0; G.camps=(d.camps||[]).map(c=>({x:c[0],y:c[1],fuel:c[2],id:c[3]})); G.drops=(d.drops||[]).filter(e=>ITEMS[e[2]]).map(e=>({x:e[0],y:e[1],id:e[2],n:e[3],t:0})); G.over=0;
   zoomLimits(); cam.tz=cam.z=VIEW_LV.includes(d.cam.z)?d.cam.z:2; cam.x=d.cam.x; cam.y=d.cam.y; G.lastA=G.dn*24+G.tod; G.clockUntil=T_+4;
   return true;
 }
@@ -2984,6 +3009,7 @@ addEventListener('wheel',e=>{
   if(G.ui==='camp'){ if(G.ctab==='cook')G.cscroll+=d; return; }
   if(G.ui==='recipes'){ G.rscroll+=d*2; return; }
   if(G.ui==='craft'){ G.cscroll2+=d*2; return; }
+  if(G.ui==='loot'&&G.loot){ G.loot.scroll+=d*2; return; }
   if(G.ui==='shop'){ G.shop.scroll+=d*2; return; }
   if(G.ui==='wardrobe'&&G.wd){ G.wd.scroll+=d*2; return; }
   if(G.ui==='clothes'&&G.cs){ G.cs.scroll+=d*2; return; }
@@ -3000,6 +3026,7 @@ function gameKey(e){
   if(G.dead&&(k==='Enter'||k==='Space')){ respawn(); return; }
   if(G.dead||G.sleep)return;
   if(G.talk){ const a=actOf(k); if(e.repeat&&(a==='interact'||k==='Enter'||k==='Space'))return; talkKey(a,k); return; }
+  if(G.ui==='bank'&&G.bank&&bankKey(e))return;
   if(G.ui==='journal'&&G.jedit){ journalKey(e); return; }
   if(G.ui==='catalog'&&G.catTyping){ catKey(e); return; }
   if(e.repeat)return;
@@ -3106,6 +3133,8 @@ const ITEMS={
   sunflower:{n:'SUNFLOWER',stack:20,d:'TALL, WITH TASTY SEEDS.',src:'SAVANNA AND PLAINS',use:{f:4,so:4}},
   branch:{n:'BRANCH',stack:12,d:'KINDLING AND FIRE FUEL.',src:'GATHER FROM ANY TREE'},
   stone:{n:'STONE',stack:12,d:'GOOD FOR A FIRE RING.',src:'ROCKS AND BOULDERS'},
+  coins:{n:'COINS',stack:200,d:'LOOSE COINS, $1.00 EACH. EXCHANGE THEM FOR YOUR WALLET OR BANK THEM. THEY CAN BE DROPPED OR STOLEN.',src:'THE BANK, OR TAKEN FROM A VAULT',kind:'cash',unit:100},
+  goldbar:{n:'GOLD BAR',stack:10,d:'A HEAVY BAR OF GOLD WORTH $200. ONLY A BANK WILL BUY OR SELL IT SAFELY.',src:'A BANK VAULT',kind:'gold',unit:20000},
   campkit:{n:'CAMP KIT',stack:3,d:'SET UP A CAMP ANYWHERE THERE IS ROOM.',kind:'camp'},
   rawmeat:{n:'RAW MEAT',stack:10,d:'BEST COOKED FIRST.',src:'HUNTING (COMING SOON)',use:{f:4,hp:-6}},
   roast:{n:'ROAST MEAT',stack:10,d:'HEARTY AND HOT.',use:{f:34,hp:10,hc:8,sc:6}},
@@ -3307,6 +3336,8 @@ const ICON={
   sunflower:{r:['..yYyYy...','.yYyyyYy..','yYyBBByYy.','.yBbBbBy..','yYyBBByYy.','.yYyyyYy..','..yYyYy...','....g.....','...gg.....','....g.....'],p:{y:'#d8a818',Y:'#f8d840',B:'#6a4220',b:'#4a2c14',g:'#4f8a3a'}},
   branch:{r:['.........b','........bB','.......bB.','......bB..','.....bB...','....bB.b..','...bB.bB..','..bB...B..','.bB.......','bB........'],p:{b:'#5a3a22',B:'#8a6440'}},
   stone:{r:['..........','...gggg...','..gGGGGg..','.gGGhGGGg.','.gGGGGGGd.','.gGGGGGdd.','..gGGGddd.','...dddd...','..........','..........'],p:{g:'#6a6862',G:'#8c8a84',h:'#b4b2ac',d:'#4a4944'}},
+  coins:{r:['..........','..........','...yyyy...','..yYYYYy..','..yYooYy..','.yyYYYYyy.','.yYYooYYy.','.yYYYYYYy.','..yyyyyy..','..........'],p:{y:'#8a6a10',Y:'#e8c030',o:'#b89020'}},
+  goldbar:{r:['..........','..........','....yyyy..','...yYYYYy.','..yYhhYYYy','.yyyyyyyyy','.yYYYYYYYy','.yYoYYoYYy','.yyyyyyyyy','..........'],p:{y:'#8a6a10',Y:'#f0c838',o:'#c89818',h:'#fff0a0'}},
   campkit:{r:['....t.....','...tTt....','..tTTTt...','.tTTdTTt..','.tTTdTTTt.','tTTTdTTTTt','tttdddtttt','..ss..ss..','.s.s..s.s.','..........'],p:{t:'#7a5a36',T:'#b08a56',d:'#3a281a',s:'#8a6a3a'}},
   rawmeat:{r:['..........','..mmmmm...','.mMMMMMm..','.mMfMMMMm.','.mMMMMMMm.','..mMMMMm..','...mmmmbB.','........bB','.........b','..........'],p:{m:'#a83a3a',M:'#d86a6a',f:'#f4d8d0',b:'#d8d4c8',B:'#f4f0e4'}},
   roast:{r:['..........','..mmmmm...','.mMMMMMm..','.mMfMMMMm.','.mMMMMMMm.','..mMMMMm..','...mmmmbB.','........bB','.........b','..........'],p:{m:'#6a3a1e',M:'#b86a36',f:'#e8a860',b:'#d8d4c8',B:'#f4f0e4'}},
@@ -3715,6 +3746,7 @@ function iconCv(id){ let c=ICV.get(id); if(!c){ c=mkCanvas(10,10); paintIcon(c.g
   R('nettletea',1,{nettle:2}); R('thymetea',1,{thyme:2}); R('rosemarytea',1,{rosemary:2}); R('cordial',1,{berries:3,honey:1}); R('nutmilk',1,{hazelnut:3,honey:1});
   for(const k in ITEMS)if(ITEMS[k].stack<32)ITEMS[k].stack=32;
 })();
+(function mergeCraftVariants(){ const first=new Map(); for(let i=0;i<CRAFTS.length;i++){ const r=CRAFTS[i], f=first.get(r.out); if(!f){ first.set(r.out,r); continue; } if(!f.alts)f.alts=[]; if(!f.alts.some(a=>JSON.stringify(a.inp)===JSON.stringify(r.inp)&&a.tool===r.tool)&&!(JSON.stringify(f.inp)===JSON.stringify(r.inp)&&f.tool===r.tool))f.alts.push(r); CRAFTS.splice(i,1); i--; } })();
 
 /* ---- pack helpers ---- */
 const countItem=id=>G.inv.reduce((a,sl)=>a+(sl&&sl.id===id?sl.n:0),0);
@@ -3737,7 +3769,7 @@ function slotSwap(a,b){
 function dropAt(id,n){ const P=G.pl, v=DIRVEC[P.dir]; let x=P.x+v[0]*.9, y=P.y+v[1]*.9; if(hitsBody(x,y)){ x=P.x; y=P.y; } const d={x,y,id,n,t:0,by:'p',at:G.whrs,sig:outfitSig(P),stolen:isStolenId(id),wit:[],ni:0,insp:[]}; G.drops.push(d); dropSeen(d); }
 function dropSlot(i,all){ const sl=G.inv[i]; if(!sl)return; if(G.in){ toast('NOT HERE. STEP OUTSIDE FIRST',DIM); return; } const n=all?sl.n:1; dropAt(sl.id,n); sl.n-=n; if(sl.n<=0)G.inv[i]=null; sfx.drop(); }
 /* ---- menus: one rule for all of them. The key that opened a menu closes it, Esc closes any menu, and the interact key also closes the camp menu. ---- */
-function closeUI(){ if(G.ui)sfx.close(); if(G.in&&G.in.fit)G.in.fit=null; G.wd=null; G.cs=null; G.ui=null; G.invSel=-1; G.cookCamp=null; G.jedit=false; G.catTyping=false; G.cook=null; }
+function closeUI(){ if(G.ui==='loot'&&G.loot)lootFinish(); if(G.ui)sfx.close(); if(G.in&&G.in.fit)G.in.fit=null; G.wd=null; G.cs=null; G.ui=null; G.invSel=-1; G.cookCamp=null; G.jedit=false; G.catTyping=false; G.cook=null; }
 function openUI(name){ if(G.ui===name)return; if(!G.ui)sfx.open(); else sfx.tick(); G.ui=name; G.invSel=-1; G.jedit=false; G.catTyping=false; }
 function toggleUI(name){ if(G.ui===name)closeUI(); else openUI(name); }
 function moveToHotbar(h){ if(G.invSel>=0&&G.invSel!==h){ slotSwap(G.invSel,h); G.invSel=h; } }
@@ -3766,6 +3798,8 @@ function canUse(u,mul){
 const eatTxt=(u,m)=>{ const o=[]; for(const [k,lab] of EFF)if(u[k]>0)o.push('+'+Math.round(u[k]*(m||1))+' '+lab); return o.length?'  '+o.join(' '):''; };
 function useSlot(i){
   const sl=G.inv[i]; if(!sl)return; const d=ITEMS[sl.id];
+  if(d.kind==='cash'){ const v=sl.n*d.unit; G.pl.cash+=v; G.inv[i]=null; sfx.coin&&sfx.coin(); toast('EXCHANGED '+sl.n+' '+d.n+'  +'+fmtM(v),GRN); return; }
+  if(d.kind==='gold'){ toast('TAKE IT TO A BANK',DIM); return; }
   if(d.kind==='camp'){ if(G.in){ toast('YOU CAN\'T CAMP INDOORS',DIM); return; } if(placeCamp()){ sl.n--; if(sl.n<=0)G.inv[i]=null; } return; }
   if(d.kind==='torch'||d.kind==='lantern'){ if(G.torch>0){ toast('YOUR LIGHT IS ALREADY BURNING',DIM); return; } G.torch=d.light||(d.kind==='lantern'?1000:300); sl.n--; if(sl.n<=0)G.inv[i]=null; toast(d.kind==='lantern'?'LANTERN LIT':'TORCH LIT',AMB); sfx.ignite(); return; }
   if(d.kind==='rod'){ if(G.in){ toast('NO FISHING INDOORS',DIM); return; } castLine(); return; }
@@ -3805,8 +3839,8 @@ function clearWanted(){ for(const w of (G.wand||[]))w.hostile=0;                
 function respawn(){
   const P=G.pl; let V=null,bd=1e9; for(const W of G.vlist){ const d=Math.hypot(W.cx-P.x,W.cy-P.y); if(d<bd){ bd=d; V=W; } }
   let x,y; if(V){ const d=V.lawB?doorOf(V,V.lawB.id):(V.plazaSpots&&V.plazaSpots[0]?V.plazaSpots[0]:{x:V.cx,y:V.cy}); x=d.x; y=d.y+(V.lawB?1:0); } else{ const cp=G.camps.length?G.camps[G.camps.length-1]:null; x=cp?cp.x+.5:G.start[0]+.5; y=cp?cp.y+1.6:G.start[1]+.5; }
-  P.x=x; P.y=y; P.vx=P.vy=0; P.hp=60; P.hc=45; P.sc=55; P.st=50; P.food=55; P.tired=0; P.mhp=60+40*P.hc/100; P.mst=60+40*P.sc/100; P.hurt=0;
-  for(let i=0;i<G.inv.length;i++)G.inv[i]=null; P.cash=0; G.stolen=[]; G.stand=null; G.lethal=null; G.esc=null; G.court=null; G.cust=null; G.talk=null;          // everything you carried is gone
+  P.sitB=0; P.x=x; P.y=y; P.vx=P.vy=0; P.hp=60; P.hc=45; P.sc=55; P.st=50; P.food=55; P.tired=0; P.mhp=60+40*P.hc/100; P.mst=60+40*P.sc/100; P.hurt=0;
+  for(let i=0;i<G.inv.length;i++)G.inv[i]=null; P.cash=0; G.bankA={}; G.stolen=[]; G.stand=null; G.lethal=null; G.esc=null; G.court=null; G.cust=null; G.talk=null;          // everything you carried is gone, and so are your savings
   if(G.in){ ibSave(G.in); for(const a of G.in.actors){ a.n._a=null; a.n.hid=0; } G.in=null; } G.tr=null; G.dead=0; cam.x=P.x*TS; cam.y=P.y*TS-5;
   clearWanted(); closeUI(); P.moving=false; P.swing=0; G.sleep=null; G.brk=null; G.fish=null; G.washing=null;
   toast(V?'YOU WOKE UP IN '+V.name+'. YOU LOST EVERYTHING YOU CARRIED':'YOU LOST EVERYTHING YOU CARRIED',RED,true);
@@ -3850,6 +3884,8 @@ function findInteract(){
   for(const cp of G.camps)consider(cp,'camp',cp.x+.5,cp.y+.6,1.6);
   for(const dp of G.drops)consider(dp,'drop',dp.x,dp.y,1.2);
   if(!P.carry)for(const bd of (G.bodies||[]))if(!bd.carry&&!bd.in)consider(bd,'body',bd.x,bd.y-.1,1.5);
+  if(P.sitB){ const sb=G.bmap.get(P.sitB); if(sb)return {k:'bench',o:sb,sit:1}; P.sitB=0; }
+  for(let ty=y0-2;ty<=y0+2;ty++)for(let tx=x0-2;tx<=x0+2;tx++){ const id=G.occ.get(tk(tx,ty)); const bb=id?G.bmap.get(id):null; if(bb&&bb.t==='bench'&&bb.x===tx&&bb.y===ty)consider(bb,'bench',tx+.5,ty+1,1.8); }
   const seenB=new Set();
   for(let ty=y0-2;ty<=y0+2;ty++)for(let tx=x0-2;tx<=x0+2;tx++){ const id=G.occ.get(tk(tx,ty)); if(!id||seenB.has(id))continue; seenB.add(id); const b=G.bmap.get(id); if(b&&b.t==='field'&&fieldReady(b))consider(b,'field',b.x+b.w/2,b.y+b.h/2+.2,2.4); }
   for(const V of G.vlist){ if(!V.active)continue; for(const n of V.npcs){ if(n.inside||n.hid)continue; consider(n,'npc',n.x,n.y-.3,1.9); } }
@@ -3863,8 +3899,10 @@ function findInteract(){
 }
 function gain(id,n){ if(!canFit(id,n)){ toast('PACK FULL',RED); sfx.err(); return false; } addItem(id,n); toast('+'+n+' '+ITEMS[id].n,GRN); return true; }
 function markPicked(n){ const key=tk(n.x,n.y); G.picked.set(key,G.whrs); G.pcnt.set(key,(G.pcnt.get(key)||0)+1); }
+function benchStand(){ const P=G.pl, b=G.bmap.get(P.sitB); P.sitB=0; if(b){ P.x=b.x+.5; P.y=b.y+1.3; } }
+function benchSit(b){ const P=G.pl; if(P.carry||G.in)return; const occ=G.vlist.some(V=>V.npcs.some(n=>n.sitB===b.id&&n.sitSlot===0)), occ2=G.vlist.some(V=>V.npcs.some(n=>n.sitB===b.id&&n.sitSlot===1)); const sl=occ&&!occ2?1:0; P.sitB=b.id; P.x=b.x+.5+(sl?.22:-.22); P.y=b.y+.68; P.dir=0; P.vx=P.vy=0; sfx.tick(); }
 function interact(){
-  const it=G.near; if(!it)return; const o=it.o; if(it.k==='bodydrop'){ releaseBody(); return; } if(it.k==='wash'){ clStartWash(); return; } if(INK.has(it.k)){ interactX(it); return; }
+  const it=G.near; if(!it)return; const o=it.o; if(it.k==='bench'){ if(it.sit)benchStand(); else benchSit(o); return; } if(it.k==='bodydrop'){ releaseBody(); return; } if(it.k==='wash'){ clStartWash(); return; } if(INK.has(it.k)){ interactX(it); return; }
   if(it.k==='node'){
     if(it.chop){ chopHit(o); return; }
     const rc=o.t===4?workCost(2.2):0; if(rc&&!staOk(rc))return;
@@ -4066,6 +4104,8 @@ function campReason(tx,ty){
   if(clsAt(tx,ty)<2||clsAt(tx+1,ty)<2||clsAt(tx,ty+1)<2)return 'TOO WET HERE';
   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=2;dx++){ const n=nodeAt(tx+dx,ty+dy); if(n&&n.t!==5&&n.t!==8&&n.t!==9)return 'NO ROOM HERE'; }
   for(const c of G.camps)if(Math.hypot(c.x-tx,c.y-ty)<6)return 'ANOTHER CAMP IS TOO NEAR';
+  for(const o of (G.wand||[]))if(o.camp&&Math.hypot(o.camp.x-tx,o.camp.y-ty)<6)return 'A TRAVELLER IS CAMPED HERE';
+  for(let dy=0;dy<=1;dy++)for(let dx=0;dx<=1;dx++)if(G.occ.has(tk(tx+dx,ty+dy)))return 'NO ROOM HERE';
   if(vAt(tx,ty)>.7)return 'TOO STEEP';
   return null;
 }
@@ -4295,7 +4335,7 @@ function buildVillage(site){
   // plaza: well or fountain, benches, lamps, flowers, market stalls
   if(tier===3){ const f=addB('fountain',cx-1,cy-2); mark(cx,cy-2); const st=addB('statue',cx+3,cy-3); }
   else{ addB('well',cx,cy-2); }
-  for(const [dx,dy,id] of [[-hw,-5,'lamp'],[hw,-5,'lamp'],[-hw,rw+2,'lamp'],[hw,rw+2,'lamp'],[-3,-4,'bench'],[3,-4,'bench'],[-4,rw+1,'bench'],[4,rw+1,'bench'],[-hw+1,-3,'flowerbed'],[hw-1,-3,'flowerbed']]){ if(!G.occ.has(tk(cx+dx,cy+dy)))addB(id,cx+dx,cy+dy,undefined); }
+  for(const [dx,dy,id] of [[-hw,-5,'lamp'],[hw,-5,'lamp'],[-hw,rw+2,'lamp'],[hw,rw+2,'lamp'],[-3,-4,'bench'],[3,-4,'bench'],[-4,rw+1,'bench'],[4,rw+1,'bench'],[-hw+1,-3,'flowerbed'],[hw-1,-3,'flowerbed']].concat(tier>=1&&hw>=5?[[-hw+1,1,'bench'],[hw-1,1,'bench'],[-hw+1,rw-1,'bench'],[hw-1,rw-1,'bench']]:[])){ if(!G.occ.has(tk(cx+dx,cy+dy)))addB(id,cx+dx,cy+dy,undefined); }
   const stalls=[0,2,4,6][tier]; for(let i=0;i<stalls;i++){ const side=i%2?1:-1, x=cx+side*(3+Math.floor(i/2)*3), y=cy-3; if(x-1<pz.x0||x+2>pz.x1)continue; if(G.occ.has(tk(x,y))||G.occ.has(tk(x+1,y)))continue; const b=addB(tier>=2&&i%3===0?'fishmarket':'market',x,y); V.doors.set(b.id,{x:x+1,y:y+1.4}); }
   for(let i=0;i<16;i++){ let px,py,t=0; do{ px=cx+.5+(rn()-.5)*(2*hw-3); py=cy-1+rn()*(rw+4); t++; }while(Math.abs(px-cx)<1.8&&Math.abs(py-(cy-1.5))<2.2&&t<8); V.plazaSpots.push({x:px,y:py}); }
   // civic building on the north side of the plaza
@@ -4304,9 +4344,9 @@ function buildVillage(site){
   const need=[];
   const req=(t,min,max,p)=>need.push({t,min,max,p:p||.7});
   if(tier===0){ req('barn',8,40,.5); req('grocer',4,20,.3); }
-  else if(tier===1){ req('tailor',4,30,.97); req('cobbler',4,30,.8); req('tavern',4,26,.8); req('bakery',4,26,.8); req('smithy',6,30,.7); req('grocer',4,26,.7); req('carpenter',8,34,.6); req('stable',10,34,.5); req('barn',16,50,.6); req('barn',18,50,.5); req('windmill',18,50,.6); }
-  else if(tier===2){ req('tailor',3,44,.97); req('cobbler',3,44,.9); req('weaver',3,44,.55); for(const t of ['tavern','inn','bakery','bakery','smithy','grocer','butcher','apothecary','school','clinic','brewery','mason','carpenter','library'])req(t,3,44,.75); req('church',3,16,.9); for(const t of ['barn','barn','stable','windmill'])req(t,30,60,.6); }
-  else{ req('tailor',3,66,.97); req('cobbler',3,66,.9); req('weaver',3,66,.85); for(const t of ['tavern','tavern','inn','inn','bakery','bakery','smithy','grocer','grocer','butcher','apothecary','school','clinic','brewery','mason','carpenter','library','jeweler','chandler','guildhall','pottery','church'])req(t,3,66,.75); for(const t of ['barn','stable','windmill'])req(t,50,80,.6); }
+  else if(tier===1){ req('bank',4,30,.97); req('tailor',4,30,.97); req('cobbler',4,30,.8); req('tavern',4,26,.8); req('bakery',4,26,.8); req('smithy',6,30,.7); req('grocer',4,26,.7); req('carpenter',8,34,.6); req('stable',10,34,.5); req('barn',16,50,.6); req('barn',18,50,.5); req('windmill',18,50,.6); }
+  else if(tier===2){ req('bank',3,44,.97); req('tailor',3,44,.97); req('cobbler',3,44,.9); req('weaver',3,44,.55); for(const t of ['tavern','inn','bakery','bakery','smithy','grocer','butcher','apothecary','school','clinic','brewery','mason','carpenter','library'])req(t,3,44,.75); req('church',3,16,.9); for(const t of ['barn','barn','stable','windmill'])req(t,30,60,.6); }
+  else{ req('bank',3,66,.97); req('tailor',3,66,.97); req('cobbler',3,66,.9); req('weaver',3,66,.85); for(const t of ['tavern','tavern','inn','inn','bakery','bakery','smithy','grocer','grocer','butcher','apothecary','school','clinic','brewery','mason','carpenter','library','jeweler','chandler','guildhall','pottery','church'])req(t,3,66,.75); for(const t of ['barn','stable','windmill'])req(t,50,80,.6); }
   const resBag=()=>{
     if(bi===2)return tier<=1?['cabin','cabin','farmhouse','longhouse','cottage']:['house','stonehouse','cabin','farmhouse','longhouse'];
     if(bi===5)return tier<=1?['thatched','thatched','hut','bungalow','cottage']:['thatched','bungalow','house','stonehouse','cottage'];
@@ -4340,7 +4380,8 @@ function buildVillage(site){
   // lamp posts: always beside the road, never on it, never in front of a door, spaced so every stretch is lit
   { const lampPts=[]; for(const b of V.B)if(b.t==='lamp')lampPts.push([b.x,b.y]);
     const nearDoor=(x,y,r)=>{ for(const [id,d] of V.doors){ if(Math.abs(d.x-(x+.5))<r&&Math.abs(d.y-(y+.5))<2.2)return true; } return false; };
-    const tryLamp=(x,y,gap,doorR)=>{ const k=tk(x,y); if(!free(x,y)||!grassAt(x,y)||G.floor.has(k))return false; if(doorR&&nearDoor(x,y,doorR))return false;
+    const frontOf=(x,y)=>V.B.some(b=>b.t!=='lamp'&&b.t!=='bench'&&BT[b.t].k!=='flowerbed'&&x>=b.x-1&&x<b.x+b.w+1&&y>=b.y+b.h-1&&y<=b.y+b.h+1.5);          // the strip in front of any building
+    const tryLamp=(x,y,gap,doorR)=>{ const k=tk(x,y); if(!free(x,y)||!grassAt(x,y)||G.floor.has(k))return false; if(doorR&&nearDoor(x,y,doorR))return false; if(frontOf(x,y))return false;
       for(const q of lampPts)if(Math.hypot(q[0]-x,q[1]-y)<gap)return false; addB('lamp',x,y); mark(x,y); lampPts.push([x,y]); return true; };
     const step=[11,7,6,5][tier];
     for(const k of rows){ const yk=cy+k*ROWGAP, ys=yk+rw, yn=yk-1;
@@ -4387,6 +4428,13 @@ function buildVillage(site){
   // bounds
   V.x0=cx-L-6; V.x1=cx+L+6; V.y0=cy+rows[0]*ROWGAP-14; V.y1=cy+rows[rows.length-1]*ROWGAP+rw+12;
   buildGraph(V,cx,cy,L,rows,rw,cols);
+  { const want=[0,4,8,12][tier]||0, tries=[], nodes=V.nodes, pzr=V.plaza; let placed=0;                           // benches along the street sides, clear of doors and of the plaza
+    for(let a=0;a<nodes.length;a++)for(const b2 of V.adj[a]){ if(b2<=a)continue; const na=nodes[a], nb=nodes[b2], dx=nb.x-na.x, dy=nb.y-na.y, len=Math.hypot(dx,dy); if(len>=2)tries.push({mx:(na.x+nb.x)/2,my:(na.y+nb.y)/2,px:-dy/len,py:dx/len}); }
+    for(let i=tries.length-1;i>0;i--){ const j=Math.floor(rn()*(i+1)); const tmp=tries[i]; tries[i]=tries[j]; tries[j]=tmp; }
+    const enter=V.B.filter(b=>ENT.has(BT[b.t].k)).map(b=>doorOf(V,b.id));
+    for(const t of tries){ if(placed>=want)break; for(const off of [2.6,-2.6,3.4,-3.4]){ const tx=Math.floor(t.mx+t.px*off), ty=Math.floor(t.my+t.py*off);
+      if(G.occ.has(tk(tx,ty))||!grassAt(tx,ty))continue; if(pzr&&tx>=pzr.x0-1&&tx<=pzr.x1+1&&ty>=pzr.y0-1&&ty<=pzr.y1+1)continue; if(enter.some(d=>Math.hypot(d.x-tx,d.y-ty)<3.2))continue; if(V.B.some(b=>b.t==='bench'&&Math.hypot(b.x-tx,b.y-ty)<5))continue;
+      if(addB('bench',tx,ty,undefined)){ placed++; break; } } } }
   populate(V,rn,ri,pk);
   return V;
 }
@@ -4513,6 +4561,7 @@ function populate(V,rn,ri,pk){
   for(const n of people){ const m=G.vmem.get(n.key); if(m){ Object.assign(n.mem,m.mem); n.rumor=m.rumor||null; if(m.life)n.life=m.life; } }
   const pop0=people.length; if(G.gone&&G.gone.length){ const gs=new Set(G.gone); for(let i=people.length-1;i>=0;i--)if(gs.has(people[i].key))people.splice(i,1); }
   restoreGuests(V,people);
+  { const seen=new Set(); for(const p of people){ let k=p.name+' '+p.last, tries=0; while(seen.has(k)&&tries++<60){ const L=p.g?FIRSTF:FIRSTM; p.name=L[(hash3(p.id,tries,7)>>>0)%L.length]; k=p.name+' '+p.last; } seen.add(k); } }          // nobody shares a full name in the same village
   V.npcs=people; V.pop=pop0;
   V.has={}; for(const b of V.B){ const k=BT[b.t].k; V.has[b.t]=(V.has[b.t]||0)+1; V.has[k]=(V.has[k]||0)+1; }
   lifeInit(V,rn);
@@ -4556,10 +4605,13 @@ function streetBeat(V,n){                                           // where a s
   const far=opts.filter(o=>Math.hypot(o.x-n.x,o.y-n.y)>6&&walkableTile(Math.floor(o.x),Math.floor(o.y)));
   return far.length?far[Math.floor(Math.random()*far.length)]:null;
 }
-function npcGoTo(V,n,x,y,spd,chase){                                  // returns true when it had to path around something
+function unsit(n){ if(n.sitB){ const b=G.bmap.get(n.sitB); if(b)n.y=b.y+1.15; n.sitB=0; } }          // stand up in front of the bench, never from inside it
+function npcGoTo(V,n,x,y,spd,chase){
+  unsit(n);                                  // returns true when it had to path around something
   let pts, heavy=false; if(lineClear(n.x,n.y,x,y))pts=[{x:n.x,y:n.y},{x,y}];
   else{ heavy=true; const m=tilePathPts({x:n.x,y:n.y},{x,y}); pts=m?[{x:n.x,y:n.y}].concat(m,[{x,y}]):null;
     if(!pts){ const g=V.nodes.length?graphPath(V,n.x,n.y,x,y):[]; pts=fixPath([{x:n.x,y:n.y}].concat(g.map(q=>({x:q.x,y:q.y})),[{x,y}])); } }
+  if(chase)n.tgt=null;                                                  // a pursuit never ends by walking through some old destination's door and vanishing inside
   n.path=pts; n.pi=1; n.st='walk'; if(spd)n.spd=spd; n.chase=!!chase; n.moving=true; n.pgT=0; n.pgX=n.x; n.pgY=n.y; n.bestD=1e9; n.bestT=T_; return heavy;
 }
 function unstick(V,n){                                               // stuck on something: walk around it, or give up and re-plan
@@ -4570,6 +4622,7 @@ function unstick(V,n){                                               // stuck on
   n.path=[{x:n.x,y:n.y}].concat(m,[fin]); n.pi=1; n.moving=false; n.bestD=1e9; n.bestT=T_;
 }
 function routeTo(V,n,dest){
+  unsit(n);
   if(n._a&&G.in&&G.in.actors.indexOf(n._a)>=0&&n.inside===G.in.b.id){ const a=n._a; n.pend=dest; if(a.mode==='sleep'){ getUp(G.in,a); a.leave=0; } if(!a.leave){ a.leave=1; a.seatTo=null; a.go=null; if(a.mode==='sit'||a.mode==='keeper')a.mode='wander'; } return; }   // you are in the room: they walk to the door and leave through it
   const from=n.inside?doorOf(V,n.inside):{x:n.x,y:n.y};
   n.inside=null; n.hidden=false;
@@ -4637,7 +4690,7 @@ function dlgPlace(n,V){
 function placesList(V,n){                                              // every place is listed once, under its real name, pointing at the nearest one of that kind
   const out=[], P=G.pl, ref=(G.in&&G.in.ret)?G.in.ret:(P?{x:P.x,y:P.y}:{x:V.cx,y:V.cy});
   const near=t=>{ let best=null, bd=1e9; for(const b of V.B){ if(b.t!==t)continue; const d=Math.hypot(b.x+b.w/2-ref.x,b.y+b.h/2-ref.y); if(d<bd){ bd=d; best=b; } } return best; };
-  for(const t of ['tavern','inn','bakery','grocer','tailor','cobbler','weaver','smithy','market','butcher','fishhut','fishmarket','apothecary','church','chapel','clinic','carpenter','jeweler','chandler','pottery','brewery','mason','cooper','tannery','sawmill','library','school','stable','watchhouse','townhall','well','field','windmill']){ const b=near(t); if(b)out.push({lab:'THE '+BT[t].n,b}); }
+  for(const t of ['tavern','inn','bakery','grocer','tailor','cobbler','weaver','smithy','market','butcher','fishhut','fishmarket','apothecary','church','chapel','clinic','carpenter','jeweler','bank','chandler','pottery','brewery','mason','cooper','tannery','sawmill','library','school','stable','watchhouse','townhall','well','field','windmill']){ const b=near(t); if(b)out.push({lab:'THE '+BT[t].n,b}); }
   if(!near('cobbler')&&!near('tailor')&&!near('weaver'))out.push({lab:'SHOES AND CLOTHES',alt:1});            // nobody here sells them: point to the next village
   return out;
 }
@@ -4771,7 +4824,7 @@ function lifeOne(V,n){
   n.social=clamp(.12+tr.fr/10*.45+R(3)*.4,0,1);
   n.lunchPref=R(4); n.friends=n.friends||[]; n.fT=G.whrs||0; n.awakeUntil=0; n.cT=0;
 }
-const SHOPJOB={cobbler:'COBBLER',tailor:'TAILOR',weaver:'WEAVER',grocer:'GROCER',butcher:'BUTCHER',fishhut:'FISHMONGER',fishmarket:'FISHMONGER',apothecary:'APOTHECARY',jeweler:'JEWELER',chandler:'CHANDLER',carpenter:'CARPENTER',sawmill:'SAWYER',mason:'MASON',pottery:'POTTER',cooper:'COOPER',tannery:'TANNER',brewery:'BREWER',market:'MARKET TRADER'};
+const SHOPJOB={bank:'BANKER',cobbler:'COBBLER',tailor:'TAILOR',weaver:'WEAVER',grocer:'GROCER',butcher:'BUTCHER',fishhut:'FISHMONGER',fishmarket:'FISHMONGER',apothecary:'APOTHECARY',jeweler:'JEWELER',chandler:'CHANDLER',carpenter:'CARPENTER',sawmill:'SAWYER',mason:'MASON',pottery:'POTTER',cooper:'COOPER',tannery:'TANNER',brewery:'BREWER',market:'MARKET TRADER'};
 const jobLabel=n=>{ if(n.homeless)return 'DRIFTER'; if(n.trade)return n.trade; if(n.work&&(n.job==='shopkeeper'||n.job==='craftsman'||n.job==='merchant')){ const b=G.bmap.get(n.work); if(b&&SHOPJOB[b.t])return SHOPJOB[b.t]; } return JOBT[n.job]||''; };       // a shop worker is called what the shop is
 function lifeInit(V,rn){
   const N=V.npcs; for(const n of N)lifeOne(V,n);
@@ -4833,8 +4886,15 @@ const eateries=V=>V._eat||(V._eat=V.B.filter(b=>['tavern','inn'].includes(BT[b.t
 const shopsFor=V=>V._shp||(V._shp=V.B.filter(b=>['grocer','bakery','butcher','fishhut','market','fishmarket'].includes(b.t)));
 function pickShop(V,n,seed){
   const L=shopsFor(V); if(!L.length)return null; const hb=G.bmap.get(n.home); let best=null,bs=1e9;
-  for(const b of L){ const d=hb?Math.hypot(b.x-hb.x,b.y-hb.y):0, sc=d+hr01(b.id,seed,5)*9-(b.t==='grocer'||b.t==='market'?6:0); if(sc<bs){ bs=sc; best=b; } }
+  for(const b of L){ const d=hb?Math.hypot(b.x-hb.x,b.y-hb.y):0, sc=d+hr01(b.id,seed+(n.id|0)*7,5)*9-(b.t==='grocer'||b.t==='market'?6:0); if(sc<bs){ bs=sc; best=b; } }
   return best;
+}
+function shopUrge(V,n,h,dn,slot){                                  // how much this person feels like going out to the shops today: hungry, low pantry, nosy, or simply at home all day
+  const t=n.tr||{}; let u=.12+(t.cu||5)*.012+(t.fr||5)*.008;
+  if(h){ const per=h.pant/Math.max(1,h.mem); if(per<2.2)u+=.35; else if(per<3.4)u+=.15; }
+  if(n.food!=null&&n.food<45)u+=.25;
+  if(n.wfh==='all'||n.job==='homemaker'||n.job==='retired'||n.jobless)u+=.2;
+  return clamp(u+(hr01(n.id,dn,70+slot)-.5)*.3,0,.9);
 }
 const hasChurch=V=>V.B.find(b=>b.t==='church'||b.t==='chapel');
 const isFlex=n=>!!(n.wfh==='all'||n.job==='homemaker'||n.job==='retired'||n.homeless);
@@ -4853,20 +4913,20 @@ function guardDay(V,n,rr){
      from 4:30 to 23:30 and put somebody out on patrol whenever two are on duty; every time shifts a little each day (shared by all of them, so the hand-overs
      match), and wake-ups, breakfast and prep differ per person. Meals are never taken at the desk while somebody else needs it, and never both together. */
   const sh=hr01(V.cx|0,(G.dn|0)*7+3,41), s2=hr01(V.cy|0,(G.dn|0)*7+5,42), s3=hr01(V.cx|0,(G.dn|0)*7+9,43);
-  const LE=9.3+sh*.4, LEe=LE+.7+s2*.15, ML=11.9+sh*.3, MLe=ML+.7+s2*.15, Eend=Math.max(12.8+s3*.3,MLe+.25), TL=Math.max(14.7+s2*.3,Eend+.9);      // E lunch, E leaves, M lunch, L arrives
+  const LE=9.3+sh*.4, LEe=LE+.7+s2*.15, ML=11.9+sh*.3, MLe=ML+.7+s2*.15, Eend=Math.max(12.8+s3*.3,MLe+.75), TL=Math.max(14.7+s2*.3,Eend+.9);      // E lunch, E leaves, M lunch, L arrives
   const wake=(c0,rg)=>{ let c=c0+rr(33)*rg; push('sleep',0,c); push('getup',c,c+.2); c+=.2; const bf=.3+rr(34)*.14; push('bfast',c,c+bf,{meal:'b'}); c+=bf; const pr=.12+rr(35)*.12; push('prep',c,c+pr); return c+pr; };
   if(role==='E'&&pair){
     wake(3.2,.25); push('work',4.25,LE,{work:1}); push('lunch',LE,LEe,{meal:'l',where:'home'}); push('work',LEe,Eend,{work:1});      // opens the law house; the middle officer takes the desk during the lunch
     push('chores',Eend,Eend+.9,{garden:rr(32)<.4?1:0}); push('dinner',Eend+2.4,Eend+3.05,{meal:'d'}); push('relax',Eend+3.05,20.3); push('sleep',20.3,24);
   } else if(role==='M'){
-    let c=wake(6.9,.4); push('chores',c,8.5); push('patrol',8.5,LE,{work:1});                                  // out on patrol while the early officer is at the desk
-    push('work',LE,LEe,{work:1});                                                                              // covers the desk during the early officer's lunch
-    push('patrol',LEe,ML,{work:1}); push('lunch',ML,MLe,{meal:'l',where:'tavern'}); push('patrol',MLe,Eend-.1,{work:1});
-    push('work',Eend-.1,TL,{work:1});                                                                          // holds the desk until the late officer arrives
+    let c=wake(6.9,.4); push('chores',c,8.5); push('patrol',8.5,LE-.35,{work:1});                                // out on patrol while the early officer is at the desk
+    push('work',LE-.35,LEe+.25,{work:1});                                                                              // covers the desk during the early officer's lunch
+    push('patrol',LEe+.25,ML,{work:1}); push('lunch',ML,MLe,{meal:'l',where:'tavern'}); push('patrol',MLe,Eend-.45,{work:1});
+    push('work',Eend-.45,TL,{work:1});                                                                          // holds the desk until the late officer arrives
     push('patrol',TL,17.4+s3*.3,{work:1});                                                                     // then out again while the late officer has the desk
     push('chores',17.7+s3*.3,18.6+s3*.3,{garden:rr(32)<.4?1:0}); push('dinner',18.8+s3*.3,19.45+s3*.3,{meal:'d'}); push('relax',19.45+s3*.3,22); push('sleep',22,24);
   } else if(role==='L'&&pair){
-    let c=wake(8.8,.4); push('chores',c,c+1.2); push('relax',c+1.2,TL-.1); push('work',TL-.1,17.9+s3*.4,{work:1});
+    let c=wake(8.8,.4); push('chores',c,c+1.2); push('relax',c+1.2,TL-.45); push('work',TL-.45,17.9+s3*.4,{work:1});
     push('dinner',18+s3*.4,18.7+s3*.4,{meal:'d',where:'work'}); push('work',18.7+s3*.4,23.5,{work:1}); push('relax',23.5,23.9); push('sleep',23.9,24);
   } else if(role==='A'||(role==='E'&&!pair)){                                                                  // early street officer: patrols from the morning to early afternoon
     wake(3.3,.3); const o=desk?0:off;
@@ -4908,18 +4968,14 @@ function buildSched(V,n){
     if(eateries(V).length&&rr(13)<tavP&&bed-cc>1.3){ const dur=Math.min(bed-.5-(cc+.15),1+rr(14)*1.1); if(dur>.5){ push('relax',cc,cc+.15); push('tavern',cc+.15,cc+.15+dur); cc=cc+.15+dur; } }
     push('relax',cc,bed); push('sleep',bed,24);
   };
-  const lunchWhere=(bW)=>{
-    if(shopper)return 'shop';
-    let pH=.5; if(bW&&G.bmap.get(n.home)){ const d=Math.hypot(bW.x-G.bmap.get(n.home).x,bW.y-G.bmap.get(n.home).y); pH=d<12?.62:.2; }
-    const r=n.lunchPref*.6+rr(7)*.4; if(r<pH)return 'home'; if(r<pH+.22&&eateries(V).length)return 'tavern'; if(r<pH+.4)return 'bench'; return 'work';
-  };
+  const lunchWhere=(bW)=>shopper?'shop':pickLunch(V,n,h,dn,bW);
   if(hasWork){
     const bW=n.work?G.bmap.get(n.work):null, wid=n.work||(n.job==='farmer'?9001:n.job==='guard'?9002:9003);
     let ws=Math.max(c+.05,n.ws+(rr(5)-.5)*.35);
     if(n.wfh==='am'){ const e2=Math.max(c+.4,10.6+rr(6)*.8); push('wfh',c,e2); c=e2; }
     else if(ws>c+.05){ push('prep',c,ws); c=ws; }
     const L0=Math.max(c+.4,12+hr01(wid,V.cx|0,dn+41)*.9+(n.dshift==='am'?-.9:n.dshift==='pm'?1.1:0)), L1=L0+.65+rr(8)*.45;
-    push('work',c,L0,{work:1}); push('lunch',L0,L1,{meal:'l',where:lunchWhere(bW),shop:shopper?(pickShop(V,n,dn)||{}).id:undefined});
+    push('work',c,L0,{work:1}); { let lw=lunchWhere(bW), lsh=lw==='shop'?pickShop(V,n,dn):null; if(lw==='shop'&&!lsh)lw='bench'; push('lunch',L0,L1,{meal:'l',where:lw,shop:lsh?lsh.id:undefined}); }
     c=L1; const we=n.job==='guard'?clamp(n.we+(rr(9)-.5)*.4,n.we<18?13.6:19.2,n.dshift==='pm'?23.2:22.4):clamp(Math.min(n.we,23.3)+(rr(9)-.5)*.5,13.8,23.3);
     if(we>20.2&&h.dinner<we){ bed=Math.min(23.95,Math.max(bed,we+.4)); const d0=Math.max(c+.3,17.7); push('work',c,d0,{work:1}); push('dinner',d0,d0+.6,{meal:'d',where:'work'}); push('work',d0+.6,we,{work:1}); c=we; push('relax',c,bed); push('sleep',bed,24); }
     else{ push('work',c,Math.max(c+.5,we),{work:1}); c=B[B.length-1].e; evening(c); }
@@ -4927,8 +4983,11 @@ function buildSched(V,n){
     const L0=12+hr01(n.id,V.cx|0,dn+43)*1, L1=L0+.7+rr(8)*.5;
     let mk=n.trade&&n.wfh?'wfh':n.job==='retired'?'social':'chores'; if(n.jobless)mk='jobhunt';
     if(shopper){ const sh=pickShop(V,n,dn); if(sh){ const hh0=hoursOf(sh), es=clamp(Math.max(c+.2,8.4+rr(15)*1.3),hh0[0]+.3,Math.max(hh0[0]+.4,hh0[1]-1.1)); if(es>c+.1)push(mk,c,es); push('errand',es,es+.55+rr(16)*.3,{shop:sh.id}); c=B[B.length-1].e; } else{ push('errand',c+.3,c+1,{shop:undefined,forage:1}); c=B[B.length-1].e; } }
+    { const bkB=bankOf(V); if(!shopper&&bkB&&n.age>=18&&wantsBank(V,n,dn)){ const hb=hoursOf(bkB), es=clamp(Math.max(c+.2,9.4+rr(31)*1.6),hb[0]+.3,hb[1]-.9); if(es>=c+.1&&es+.5<L0){ push(mk,c,es); push('errand',es,es+.5,{shop:bkB.id,bank:1}); c=B[B.length-1].e; } } }
     { const mEnd=Math.max(c+.2,L0); if(mk==='jobhunt'||mk==='social'){ const out=Math.min(mEnd-.4,9.0+rr(20)*1.1); if(out>c+.3){ push(rr(21)<.5?'chores':'yard',c,out,{garden:1}); c=out; } } push(mk,c,mEnd); c=B[B.length-1].e; }
-    push('lunch',c,c+.7+rr(8)*.5,{meal:'l',where:n.lunchPref<.62?'home':n.lunchPref<.82&&eateries(V).length?'tavern':'bench'}); c=B[B.length-1].e;
+    { let lw=pickLunch(V,n,h,dn,null), lsh=null; if(lw==='shop'){ lsh=pickShop(V,n,dn); if(!lsh)lw='home'; }
+      push('lunch',c,c+.7+rr(8)*.5,{meal:'l',where:lw,shop:lsh?lsh.id:undefined}); c=B[B.length-1].e; }
+    if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,72)<shopUrge(V,n,h,dn,2)*.6){ const sh=pickShop(V,n,dn+3), hh=sh?hoursOf(sh):null; if(sh&&c+.7<hh[1]-.2){ push('errand',c+.1,c+.1+.5+rr(42)*.3,{shop:sh.id,personal:1}); c=B[B.length-1].e; } }
     if(n.wfh==='all'){ const e=Math.max(c+.5,16.2+rr(17)*1.4); push('wfh',c,e); c=e; }
     else{ const r=rr(18), e=Math.max(c+.6,15.6+rr(17)*1.6); push(r<.35?'social':r<.6?'yard':r<.8?'chores':'social',c,e,{garden:r>=.35&&r<.6?1:0}); c=e; }
     evening(c);
@@ -4992,6 +5051,8 @@ const asleepNow=(V,n)=>{ const b=curBlk(V,n); return b.k==='sleep'&&!(n.awakeUnt
 function doingFor(V,n,blk){
   blk=blk||curBlk(V,n); const pk=(a,s)=>a[Math.floor(G.tod*4+n.id+(s||0))%a.length], pn=blk.pn!==undefined?V.nid.get(blk.pn):null;
   if(n.ovr&&n.ovrB===slotId(blk)&&n.ovr.doing)return n.ovr.doing;
+  if(n.shopping&&n.shopping.slot===slotId(blk)&&G.whrs<n.shopping.until)return SHOPPING_TXT[(n.id+((G.tod*3)|0))%SHOPPING_TXT.length];
+  if(n.sitB&&n.st!=='walk'&&blk.k!=='sleep')return SIT_TXT[(n.id+((G.tod*2)|0))%SIT_TXT.length];
   if(n.sleeping)return 'SLEEPING ON THE STREET';
   switch(blk.k){
     case 'sleep': return n.homeless?'AWAKE ON THE COLD STREET':n.awakeUntil>G.whrs?'AWAKE AND ON EDGE':awakeClear(n)?sleepAwake(V,n,blk):'SLEEPING';
@@ -5002,7 +5063,7 @@ function doingFor(V,n,blk){
     case 'wfh': return n.tdo?pk(n.tdo):'WORKING AT HOME';
     case 'work': return n.gig?pk(n.gdo):pk(WORKD[n.job]||WORKD.none);
     case 'lunch': return blk.where==='shop'?'PICKING UP FOOD ON THE LUNCH BREAK':blk.where==='scraps'?'EATING A STALE CRUST':'EATING LUNCH';
-    case 'errand': return 'SHOPPING FOR FOOD';
+    case 'errand': return blk.bank?'GOING TO THE BANK':blk.personal?'BROWSING THE SHOPS':'SHOPPING FOR FOOD';
     case 'dinner': return blk.where==='soup'?'SHARING A BOWL OF SOUP':'HAVING DINNER';
     case 'meet': return 'CHATTING WITH '+(pn?pn.name:'A FRIEND');
     case 'visit': return 'VISITING '+(pn?pn.name:'A FRIEND');
@@ -5023,6 +5084,8 @@ function doingFor(V,n,blk){
 function destForBlk(V,n,blk){
   if(n.ovr&&n.ovrB===slotId(blk))return n.ovr;
   const k=blk.k, r=hr01(n.id,G.dn*17+blk.i,91), r2=hr01(n.id,G.dn*17+blk.i,92), ps=V.plazaSpots, plazaAt=i=>{ const p=ps[Math.floor(i)%ps.length]; return {x:p.x,y:p.y,inside:null,k:'plaza'}; };
+  const benchSeat=()=>{ if(n.noBench===slotId(blk))return null; const bs=V._bn||(V._bn=V.B.filter(b=>b.t==='bench')); if(!bs.length)return null; const off=Math.floor(r*bs.length);              // two people to a bench, never more
+    for(let i=0;i<bs.length;i++){ const b=bs[(i+off)%bs.length], occ=V.npcs.filter(o=>o!==n&&(o.sitB===b.id||(o.tgt&&o.tgt.benchId===b.id))); if(occ.length<2){ const sl=occ.some(o=>o.sitSlot===0||(o.tgt&&o.tgt.slot===0))?1:0; return {x:b.x+.5+(sl?.22:-.22),y:b.y+1.12,inside:null,k:'bench',benchId:b.id,slot:sl}; } } return null; };
   const near=(b,ox,oy)=>{ const d=doorOf(V,b.id); return {x:d.x+ox,y:d.y+oy,inside:null,k:'door'}; };
   if(n.homeless){
     if(k==='sleep'||k==='getup')return {x:n.street.x,y:n.street.y,inside:null,k:'street'};
@@ -5031,8 +5094,9 @@ function destForBlk(V,n,blk){
     return plazaAt(blk.sp!==undefined?blk.sp:r*997);
   }
   const hd=doorOf(V,n.home), home=()=>({x:hd.x,y:hd.y,inside:n.home,k:'home'}), yard=()=>({x:hd.x+(r-.5)*4,y:hd.y+.55+r2*1.1,inside:null,k:'yard'});
-  const tav=pickBuilding(V,['tavern','inn']), tavD=()=>{ if(tav&&!bldFull(V,tav.id,n,7)){ const td=doorOf(V,tav.id); return {x:td.x,y:td.y,inside:tav.id,k:'tavern'}; } return plazaAt(r*997); };
-  const shopD=()=>{ const sh=blk.shop!==undefined?G.bmap.get(blk.shop):null; if(!sh)return null; const d=doorOf(V,sh.id); return {x:d.x,y:d.y,inside:BT[sh.t].d==='none'||BT[sh.t].k==='market'?null:sh.id,k:'shop',shopId:sh.id}; };
+  const tav=pickBuilding(V,['tavern','inn']), tavD=()=>{ if(tav&&!bldFull(V,tav.id,n,7)){ const td=doorOf(V,tav.id); return {x:td.x,y:td.y,inside:tav.id,k:'tavern'}; } return home(); };               // a full tavern sends them home, not to stand about in the plaza
+  const shopD=()=>{ const sh=blk.shop!==undefined?G.bmap.get(blk.shop):null; if(!sh)return null; if(n.noShop===slotId(blk))return null; if(BT[sh.t].k!=='market'&&V.npcs.filter(o=>o!==n&&(o.inside===sh.id||(o.tgt&&o.tgt.inside===sh.id))).length>=shopCapOf(sh)+2)return null;       // a shop only holds so many people at once
+ const d=doorOf(V,sh.id); return {x:d.x,y:d.y,inside:BT[sh.t].d==='none'||BT[sh.t].k==='market'?null:sh.id,k:'shop',shopId:sh.id}; };
   switch(k){
     case 'sleep': case 'getup': case 'bfast': case 'prep': case 'wfh': case 'relax': case 'dinner':
       if(k==='dinner'&&blk.where==='work'&&n.work){ const wd=doorOf(V,n.work); return {x:wd.x,y:wd.y,inside:n.work,k:'work'}; }
@@ -5055,13 +5119,14 @@ function destForBlk(V,n,blk){
       if(blk.where==='law'&&V.lawB){ const wd=doorOf(V,V.lawB.id); return {x:wd.x,y:wd.y,inside:V.lawB.id,k:'work'}; }
       if(blk.where==='home')return home();
       if(blk.where==='tavern')return tavD();
-      if(blk.where==='shop'){ const d=shopD(); if(d)return d; }
+      if(blk.where==='shop'){ const d=shopD(); if(d)return d; if(n.work){ const wd=doorOf(V,n.work); return {x:wd.x,y:wd.y,inside:n.work,k:'work'}; } return home(); }          // no room at the shop: back to work or home
       if(blk.where==='work'&&n.work){ const wd=doorOf(V,n.work); return {x:wd.x,y:wd.y,inside:n.work,k:'work'}; }
+      if(blk.where==='bench')return benchSeat()||home();
       return plazaAt(r*997);
     case 'errand': { const d=shopD(); if(d)return d; if(V.fieldSpots.length){ const fs=V.fieldSpots[Math.floor(r*V.fieldSpots.length)]; return {x:fs.x+(r-.5)*1.2,y:fs.y+.5,inside:null,k:'forage'}; } return yard(); }
     case 'tavern': return tavD();
     case 'church': { const c=hasChurch(V); if(c){ const d=doorOf(V,c.id); return {x:d.x,y:d.y,inside:c.id,k:'church'}; } return plazaAt(r*997); }
-    case 'social': case 'jobhunt': return plazaAt(r*997);
+    case 'social': case 'jobhunt': { const bs=r2<.75?benchSeat():null; return bs||plazaAt(r*997); }
     case 'meet': case 'visit': case 'host': {
       const mp=blk.mp, side=n.id<blk.pn?-.55:.55, host=mp.host>=0?V.nid.get(mp.host):null;
       if(mp.place==='tavern')return tavD();
@@ -5094,10 +5159,107 @@ function eatAtHome(V,n,h,blk){
   if(alt&&G.tod>5.5&&G.tod<23.5){ const d=doorOf(V,alt.id); n.ovrB=slotId(blk); n.ovr={x:d.x,y:d.y,inside:BT[alt.t].k==='market'?null:alt.id,k:'eatout',doing:'EATING OUT - THE PANTRY IS EMPTY'}; routeTo(V,n,n.ovr); }
   else{ n.hungry=1; n.food=Math.max(0,n.food-5); }
 }
+/* ---- weighing it up: any choice a person makes can be ranked with this (need against cost, taste and a little mood), so it can be reused for more than shopping ---- */
+function weigh(n,opts){
+  const t=n.tr||{}, thrift=.5+(10-(t.hu||5))*.04+(t.pi||5)*.02;
+  return opts.map(o=>Object.assign({},o,{u:(o.need||0)-(o.cost||0)*thrift+(o.pref||0)+Math.random()*.25})).sort((a,b)=>b.u-a.u);
+}
+function benchSeatFor(V,n){                                           // the nearest bench with a free seat (two to a bench), or nothing
+  const bs=V._bn||(V._bn=V.B.filter(b=>b.t==='bench')); let best=null, bd=1e9;
+  for(const b of bs){ const occ=V.npcs.filter(o=>o!==n&&(o.sitB===b.id||(o.tgt&&o.tgt.benchId===b.id))); if(occ.length>=2)continue; const d=Math.hypot(b.x-n.x,b.y-n.y); if(d<bd){ bd=d; const sl=occ.some(o=>o.sitSlot===0||(o.tgt&&o.tgt.slot===0))?1:0; best={x:b.x+.5+(sl?.22:-.22),y:b.y+1.12,inside:null,k:'bench',benchId:b.id,slot:sl,dist:d}; } }
+  return best;
+}
+const SIT_TXT=['SITTING ON A BENCH, ENJOYING THE SUN','PEOPLE WATCHING FROM A BENCH','RESTING THEIR FEET ON A BENCH','FEEDING THE BIRDS FROM A BENCH','TAKING A BREATHER ON A BENCH','WATCHING THE TOWN GO BY'];
+function freeTime(V,n,dt){                                            // free time with nothing pressing: stay put, or weigh up a seat on a bench for a while
+  n.ftT=(n.ftT||0)-dt; if(n.ftT>0)return; n.ftT=25+Math.random()*35;
+  if(n.sitB&&n.st!=='walk'){ if(G.whrs>=(n.sitUntil||0)){ n.noBench=slotId(n.blk); unsit(n); n.ovr=null; n.tgt=null; n.slot=-9; } return; }          // up for good this block: it must not pick the same bench again and snap back
+
+  const blk=n.blk; if(!blk||!['relax','chores','yard','social','jobhunt'].includes(blk.k))return;
+  if(n.st==='walk'||n.busy||n.talk||n.shopQ||n.shopping||n.sleeping||(n.chat&&G.whrs<n.chat.until)||n.hunt||(n.ovr&&n.ovrB===slotId(blk))||n.food<25)return;
+  if(G.tod<8||G.tod>20||n.noBench===slotId(blk))return; const seat=benchSeatFor(V,n); if(!seat)return;
+  const age=n.age||30, soc=n.social||0, rest=blk.k==='relax'||blk.k==='social'||blk.k==='jobhunt';
+  const pick=weighPick(n,[{k:'stay',need:.6+(blk.k==='chores'?.2:0),cost:0},{k:'bench',need:.15+(age>=55?.25:0)+soc*.3+(rest?.25:0)+((G.tod>=11&&G.tod<=17)?.1:0),cost:Math.min(.5,seat.dist/60)}],Math.random());
+  if(pick.k!=='bench')return;
+  n.sitUntil=G.whrs+.4+Math.random()*.9; n.ovrB=slotId(blk); seat.doing=SIT_TXT[(n.id+((G.tod*2)|0))%SIT_TXT.length]; n.ovr=seat; routeTo(V,n,seat);
+}
+const GREET_NEW=['EXCUSE ME, GOT A MOMENT? I DON\'T THINK WE HAVE MET.','OH, HELLO THERE! ARE YOU NEW AROUND HERE?','HEY, YOU! I HAVE NOT SEEN YOUR FACE BEFORE.'], GREET_KNOWN=['GOOD TO SEE YOU AGAIN. HOW ARE THINGS?','OH, IT IS YOU! HAVE A MOMENT?','THERE YOU ARE. I WAS HOPING TO CATCH YOU.'];
+function greetTick(V,n,dt){                                           // now and then a friendly resident walks up to the player and starts a chat
+  const P=G.pl, g=n.greet;
+  if(!g){
+    n.gtT=(n.gtT||0)-dt; if(n.gtT>0)return; n.gtT=8+Math.random()*8;
+    if(!P||G.in||G.ui||G.talk||G.dead||G.sleep||G.stand||G.cust||G.tr||P.carry||G.greeter||T_<(G.greetCd||0)||G.tod<8||G.tod>20)return;
+    if(n.inside||n.busy||n.talk||n.hunt||n.shopQ||n.shopping||n.sleeping||n.homeless||n.age<14||n.job==='guard'||n.militia||!n.mem||n.mem.op<-5||(n.chat&&G.whrs<n.chat.until))return;
+    const d=Math.hypot(P.x-n.x,P.y-n.y); if(d<3||d>16||!npcSees(n,P,16)||matchedRec(V))return;
+    if(Math.random()>.02*(.5+(n.social||0)))return;
+    n.greet={t0:T_,still:0,pt:0}; G.greeter=n; return;
+  }
+  const bad=!P||G.in||G.ui&&!G.talk||G.dead||G.sleep||G.stand||G.cust||G.tr||n.hunt||n.busy||(G.talk&&G.talk.n!==n)||T_-g.t0>28;
+  const end=()=>{ n.greet=null; if(G.greeter===n)G.greeter=null; G.greetCd=T_+70; n.tgt=null; n.slot=-9; };
+  if(bad){ end(); return; }
+  if(G.talk&&G.talk.n===n){ if(!G.talk)end(); return; }
+  const d=Math.hypot(P.x-n.x,P.y-n.y);
+  if(d>1.7){ g.pt-=dt; if(g.pt<=0||n.st!=='walk'){ g.pt=.9; npcGoTo(V,n,P.x,P.y+.6,1.9,false); n.tgt={x:P.x,y:P.y,inside:null,k:'greet'}; } return; }
+  n.path=null; n.moving=false; n.st='idle'; n.wait=1; n.dir=dirFrom(P.x-n.x,P.y-n.y);
+  if(P.moving){ g.still=0; return; } g.still+=dt;                       // they wait for you to stop walking
+  if(g.still>.8){ talkOpen(n); if(G.talk&&G.talk.n===n)G.talk.text=n.mem.met>1||n.mem.greet?pickR(GREET_KNOWN):pickR(GREET_NEW); n.mem.met=Math.max(1,n.mem.met||0); end(); }
+}
+function weighPick(n,opts,rnd){                                      // the same weighing, but a sampled choice: strong favourites usually win, the others still happen now and then
+  const t=n.tr||{}, thrift=.5+(10-(t.hu||5))*.04+(t.pi||5)*.02, us=opts.map(o=>(o.need||0)-(o.cost||0)*thrift+(o.pref||0)), mx=Math.max(...us), w=us.map(u=>Math.exp((u-mx)/.2)), tot=w.reduce((a,c)=>a+c,0);
+  let x=rnd*tot; for(let i=0;i<opts.length;i++){ x-=w[i]; if(x<=0)return opts[i]; } return opts[opts.length-1];
+}
+function pickLunch(V,n,h,dn,bW){                                      // where to eat: home mostly, work or the tavern now and then, a bench for the older and retired, a shop when the pantry is low
+  const age=n.age||30, retired=n.job==='retired'||age>=65, hb=G.bmap.get(n.home), dist=bW&&hb?Math.hypot(bW.x-hb.x,bW.y-hb.y):6, bs=V._bn||(V._bn=V.B.filter(b=>b.t==='bench'));
+  const opts=[{k:'home',need:.9+(h.pant>=1?.1:-.35),cost:Math.min(.5,dist/70)}];
+  if(bW)opts.push({k:'work',need:.45,cost:0});
+  if(eateries(V).length)opts.push({k:'tavern',need:.45+(n.social||0)*.4,cost:.45});
+  if(bs.length)opts.push({k:'bench',need:.08+(age>=60?.32:0)+(retired?.22:0)+((n.social||0)>.55?.1:0),cost:0});
+  if(shopsFor(V).length&&age>=14)opts.push({k:'shop',need:shopUrge(V,n,h,dn,1)*.85,cost:.15});
+  return weighPick(n,opts,hr01(n.id,dn,200)).k;
+}
+const shopCapOf=b=>clamp(Math.round(b.w*b.h*1.4),3,12);
+const SHOPQ_TXT=['WAITING FOR THE {S} TO CLEAR','WAITING THEIR TURN OUTSIDE THE {S}','PEERING IN AT A BUSY {S}','CHECKING IF THE {S} HAS QUIETENED','EYEING THE QUEUE AT THE {S}','WAITING OUTSIDE THE {S}, BASKET IN HAND'];
+const SHOPQ_WALK=['TAKING A WALK UNTIL THE {S} QUIETENS','STRETCHING THEIR LEGS WHILE THE {S} IS BUSY','STROLLING DOWN THE STREET, WILL TRY THE {S} AGAIN','WANDERING THE LANES UNTIL THE {S} CLEARS'];
+const SHOPPING_TXT=['WEIGHING UP WHAT TO BUY','COMPARING PRICES','CHECKING THE LIST FOR HOME','WORKING OUT WHAT THE FAMILY NEEDS','LOOKING OVER THE SHELVES','DECIDING WHETHER IT IS WORTH IT'];
+function shopBusy(V,n){                                                // true when the shop is full: they queue outside instead of crowding in
+  const t=n.tgt; if(!t||!t.inside||t.k!=='shop')return false; const b=G.bmap.get(t.inside); if(!b)return false;
+  if(V.npcs.filter(o=>o!==n&&o.inside===b.id).length<shopCapOf(b)){ n.shopQ=null; return false; }
+  const nm=BT[b.t].n; if(!n.shopQ)n.shopQ={id:b.id,end:T_+16+Math.random()*14,tries:0,walking:0};
+  n.st='idle'; n.moving=false; n.path=null; n.wait=4; n.arrB=null; n.ovrB=slotId(n.blk||curBlk(V,n)); n.ovr={x:n.x,y:n.y,inside:null,k:'queue',doing:SHOPQ_TXT[(n.id+n.shopQ.tries)%SHOPQ_TXT.length].replace('{S}',nm)}; return true;
+}
+function shopQTick(V,n){
+  const q=n.shopQ; if(!q||n.st==='walk'&&!q.walking)return; const b=G.bmap.get(q.id); if(!b){ n.shopQ=null; return; }
+  if(q.walking){ if(n.st==='walk'||T_<q.walkEnd)return; q.walking=0; q.end=T_+14+Math.random()*10; n.ovr=null; n.slot=-9; return; }       // walk over: look at the shop again
+  if(V.npcs.filter(o=>o!==n&&o.inside===b.id).length<shopCapOf(b)){ n.shopQ=null; n.ovr=null; n.path=[{x:n.x,y:n.y},{x:n.x+.02,y:n.y}]; n.pi=1; n.st='walk'; n.moving=true; return; }   // somebody came out: in they go
+  if(T_<q.end)return;
+  if(q.tries<1){ const pz=V.plaza, door=doorOf(V,b.id), outs=V.nodes.filter(nd=>!(pz&&nd.x>=pz.x0-1&&nd.x<=pz.x1+1&&nd.y>=pz.y0-1&&nd.y<=pz.y1+1)&&Math.hypot(nd.x-door.x,nd.y-door.y)>5&&Math.hypot(nd.x-door.x,nd.y-door.y)<30), p=outs.length?outs[Math.floor(Math.random()*outs.length)]:null; if(p){ const d={x:p.x+n.jx,y:p.y+n.jy,inside:null,k:'walk',doing:SHOPQ_WALK[n.id%SHOPQ_WALK.length].replace('{S}',BT[b.t].n)}; q.tries++; q.walking=1; q.walkEnd=T_+22+Math.random()*18; n.ovrB=slotId(n.blk); n.ovr=d; routeTo(V,n,d); return; } }
+  n.noShop=slotId(n.blk); n.shopQ=null; n.ovr=null; n.slot=-9;           // still full: give it up for now, go back to work or home
+}
+function shopPlan(V,n,sh,sp,units,personal){                           // the invisible shop menu: they rank what is on the shelves against hunger, the pantry at home and what it costs
+  const q=stockOf(sh,sp), t=n.tr||{}, h=hhOf(V,n.home), hungry=clamp((100-(n.food==null?60:n.food))/100,0,1), pu=purseOf(n,V), per=h.pant/Math.max(1,h.mem);
+  const opts=sp.sells.filter(id=>ITEMS[id]&&(q[id]||0)>0).map(id=>{ const food=(ITEMS[id].use&&ITEMS[id].use.f)||0, price=buyPrice(id,1);
+    return {k:id,price,need:(food>0?(hungry*1.2+(per<3?.8:.3)):.1)*(1+food/10),cost:price/(20+Math.max(10,pu.c||30)),pref:(hr01(n.id,id.length*7+(G.dn|0),98)-.5)*(t.cu||5)*.12}; });
+  const ranked=weigh(n,opts), kinds=Math.max(1,Math.min(ranked.length,Math.ceil(units/2))), basket=[]; let spend=0;
+  for(let i=0;i<kinds&&i<ranked.length;i++){ const o=ranked[i], c=Math.max(1,Math.min(q[o.k]||1,Math.ceil(units/kinds))); basket.push({id:o.k,n:c}); spend+=o.price*c; }
+  const dwell=(2.5+Math.min(8,opts.length)*.35+basket.length*1.2+Math.random()*2)/60;                   // game hours: a few minutes of looking, weighing and paying
+  return {basket,spend,dwell};
+}
+function finishShopping(V,n){
+  const s=n.shopping; n.shopping=null; if(!s)return; const sh=G.bmap.get(s.shop), h=hhOf(V,n.home);
+  if(sh){ const sp=shopOf(sh), q=sp?stockOf(sh,sp):null, tl=tillOf(sh,V); for(const e of s.plan.basket)if(q&&q[e.id]!==undefined)q[e.id]=Math.max(0,q[e.id]-e.n); tl.rec.c+=s.plan.spend; tl.rec.pop=Math.min(2.5,tl.rec.pop+.07); }
+  h.pant+=s.units; n.hungry=0; if(!s.personal){ h.lastShop=G.whrs; h.needShop=false; }
+  n.food=Math.min(100,(n.food||0)+(s.lunch?(s.personal?35:20):(s.personal?8:0)));
+}
+function shopTick(V,n){
+  const s=n.shopping; if(!s)return; const sh=G.bmap.get(s.shop), inRoom=sh&&BT[sh.t].k!=='market'&&BT[sh.t].d!=='none';
+  if(G.whrs>=s.until||(inRoom&&n.inside!==s.shop)||n.st==='walk')finishShopping(V,n);
+}
 function doErrand(V,n,blk){
   const h=hhOf(V,n.home), sh=n.tgt&&n.tgt.shopId!==undefined?G.bmap.get(n.tgt.shopId):null;
   if(sh&&!bldOpen(sh).open){ n.shopMiss=1; return; }
-  h.pant+=Math.round(h.mem*2.8+hr01(n.id,G.dn,95)*3); h.lastShop=G.whrs; h.needShop=false; n.food=Math.min(100,n.food+(blk.k==='lunch'?20:0));
+  if(blk.bank){ if(sh)bankVisit(V,n,sh); return; }
+  const personal=!!(blk.personal||(blk.k==='lunch'&&h.shopper!==n.id)), units=personal?1+Math.round(hr01(n.id,G.dn,97)*2):Math.round(h.mem*2.8+hr01(n.id,G.dn,95)*3), sp=sh?shopOf(sh):null;
+  if(sh&&sp&&sp.sells&&sp.sells.length){ if(n.shopping)finishShopping(V,n); const plan=shopPlan(V,n,sh,sp,units,personal); n.shopping={shop:sh.id,until:G.whrs+plan.dwell,plan,personal,units,lunch:blk.k==='lunch',slot:slotId(blk)}; return; }
+  h.pant+=units; n.hungry=0; if(!personal){ h.lastShop=G.whrs; h.needShop=false; } n.food=Math.min(100,(n.food||0)+(blk.k==='lunch'?(personal?35:20):(personal?8:0)));
 }
 function onArrive(V,n){
   const blk=n.blk||curBlk(V,n), key=slotId(blk)+'@'+(n.inside||'o'); if(n.arrB===key)return; n.arrB=key;
@@ -5119,7 +5281,7 @@ function hungerCheck(V,n){
 
 /* ---------- switching what a person is doing ---------- */
 function switchBlock(V,n,blk,sid){
-  const d=destForBlk(V,n,blk); n.slot=sid; n.ovr=null; n.blk=blk;
+  const d=destForBlk(V,n,blk); n.slot=sid; n.ovr=null; n.blk=blk; if(d.k!=='shop')n.shopQ=null;
   if(n.inside&&d.inside===n.inside){ n.tgt=d; n.st='inside'; n.arrB=null; onArrive(V,n); return; }
   if(!n.inside&&!d.inside&&n.st==='idle'&&Math.hypot(n.x-d.x,n.y-d.y)<1.2){ n.tgt=d; n.arrB=null; return; }
   if(n._a&&G.in&&G.in.b.id===n.inside){ n.pend=d; n._a.leave=1; return; }
@@ -5141,8 +5303,10 @@ function npcUpdate(V,n,dt){
   if(n.job==='guard'){ n.mem.op=0; n.angry=0; n.mem.rev=null; }                           // the law has no feelings about you either way
   if(n.mem.rev&&G.whrs>=n.mem.rev.t){ n.mem.op=Math.min(60,n.mem.op+n.mem.rev.a); n.mem.rev=null; n.angry=0; }          // the grudge fades after a few hours
   const law=guardAI(V,n,dt);
-  const hold=(n.chat&&G.whrs<n.chat.until)||n.busy;
+  const hold=(n.chat&&G.whrs<n.chat.until)||n.busy||n.greet;
   if(sid!==n.slot&&(n.st!=='walk'||n.tgtKeep)&&!hold&&!law)switchBlock(V,n,blk,sid);
+  if(n.shopQ)shopQTick(V,n);
+  freeTime(V,n,dt); greetTick(V,n,dt);
   if(n.st==='walk'&&n.path){
     let wp=n.path[n.pi]; if(!wp){ n.st='idle'; n.moving=false; }
     else{
@@ -5151,7 +5315,7 @@ function npcUpdate(V,n,dt){
         const fn=n.path[n.path.length-1], fd=fn?Math.hypot(fn.x-n.x,fn.y-n.y):0; if(fd<(n.bestD||1e9)-.4){ n.bestD=fd; n.bestT=T_; }
         if(mv<.12||T_-(n.bestT||T_)>6){ n.stuckN=(n.stuckN||0)+1; unstick(V,n); if(n.st!=='walk'||!n.path)return; wp=n.path[n.pi]||wp; dx=wp.x-n.x; dy=wp.y-n.y; d=Math.hypot(dx,dy); } else n.stuckN=0; }
       const sl=1;                                                   // people never slow down near the player
-      if(d<.2){ n.pi++; if(n.pi>=n.path.length){ n.moving=false; n.path=null; if(n.tgt&&n.tgt.inside){ n.inside=n.tgt.inside; n.st='inside'; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); if(G.in&&G.in.b.id===n.inside&&!n._a)spawnArrival(G.in,n); } else{ n.st='idle'; n.wait=2+Math.random()*5; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); } } }
+      if(d<.2){ n.pi++; if(n.pi>=n.path.length){ n.moving=false; n.path=null; if(n.tgt&&n.tgt.inside&&shopBusy(V,n)){ } else if(n.tgt&&n.tgt.inside){ n.inside=n.tgt.inside; n.st='inside'; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); if(G.in&&G.in.b.id===n.inside&&!n._a)spawnArrival(G.in,n); } else{ if(n.tgt&&n.tgt.k==='bench'){ const bb=G.bmap.get(n.tgt.benchId); if(bb&&Math.hypot(n.x-(bb.x+.5),n.y-(bb.y+1.12))<1.6){ n.sitB=bb.id; n.sitSlot=n.tgt.slot; n.x=bb.x+.5+(n.tgt.slot?.22:-.22); n.y=bb.y+.68; n.dir=0; } } n.st='idle'; n.wait=2+Math.random()*5; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); } } }
       else{ const sp=n.spd*sl*dt*wetSlow(n); const m=Math.min(d,sp), ux=dx/d, uy=dy/d; let nx=n.x+ux*m, ny=n.y+uy*m, wall=false;
         if(walkableTile(Math.floor(n.x),Math.floor(n.y))&&!walkableTile(Math.floor(nx),Math.floor(ny))){       // never walk into a house, the law house or any wall
           if(walkableTile(Math.floor(nx),Math.floor(n.y))){ ny=n.y; } else if(walkableTile(Math.floor(n.x),Math.floor(ny))){ nx=n.x; }
@@ -5237,7 +5401,7 @@ function knockDoor(b,V){
   const aw=ins.filter(n=>!asleepNow(V,n));
   if(aw.length){
     const res=aw.filter(n=>n.home===b.id), pool=res.length?res:aw, n=pool[Math.floor(Math.random()*pool.length)], P=G.pl;
-    const wanted=!!matchedRec(V);
+    const saw=!!n.cSig||!!(n.wit&&G.whrs-n.wit<24)||!!(n.sawFlee&&G.whrs-n.sawFlee<24), wanted=!!matchedRec(V)&&saw;      // only someone who saw the crime or the chase refuses; merely knowing you does not
     if(wanted||n.mem.op<=-20){ toast('THEY WILL NOT OPEN',RED); return; }
     if(isWelcome(V,b.id)&&n.home===b.id){ const h=hhOf(V,b.id); h.opened=G.whrs+.012; h.locked=false; n.mem.op=Math.min(100,n.mem.op+1); toast('"'+pickR(['COME IN, COME IN.','OH, IT IS YOU! COME RIGHT IN.','THE DOOR IS ALWAYS OPEN FOR YOU.'])+'"',GRN); return; }
     doorTalk(b,V,n); return;
@@ -5286,6 +5450,8 @@ function outfitSig(P){                                               // the clot
   if(cl&&cl.worn&&typeof CL_CATS!=='undefined'){ const key=CL_CATS.map(c=>cl.worn[c]).join('|'); if(P._sigK!==key||!P._sigL){ const z={}; for(const c of CL_CATS)z[c]=0; P._sigK=key; P._sigL=clLookFor(cl.worn,z,z); } L=P._sigL; }
   return {shirt:L.shirt,vest:L.vest,pants:L.pants,hat:L.hat,hs:L.hs,fem:L.fem?1:0};
 }
+function recHasSig(r,sig){ return !!(r.sig&&sigMatch(r.sig,sig))||!!(r.sigs&&r.sigs.some(x=>sigMatch(x,sig))); }          // a case can know several outfits once the law has seen the suspect change
+function recAddSig(r,sig){ if(!sig||recHasSig(r,sig))return false; (r.sigs||(r.sigs=[])).push(sig); return true; }
 function sigMatch(a,b){ if(!a||!b)return false; let m=0; for(const k of ['shirt','vest','pants'])if(a[k]===b[k])m++; if(a.hat===b.hat)m+=.5; if(a.hs===b.hs)m+=.25; return m>=2.4; }
 
 /* ============================================================
@@ -5372,9 +5538,14 @@ function purseOf(n,V){                                                  // each 
   }
   return pu;
 }
-function tillOf(b,V){                                                   // a shop's takings: they build back up over a day and a half after a robbery
-  G.till=G.till||{}; const rec=G.till[b.id]||(G.till[b.id]={t:-999,r:0}), cap=Math.round((TILL[b.t]||120)*(.8+h2(b.id|0,7,G.seed|0)*.5)*(1+((V&&V.tier)||0)*.2));
-  return {cap,c:Math.round(cap*(rec.r?clamp(.15+(G.whrs-rec.t)/36,.15,1):1)),rec};
+function tillOf(b,V){                                                   // a shop's takings are real money: customers add to it, robbers empty it, and over time it drifts with how popular the shop is
+  V=V||(b.vid!=null?G.vil.get(b.vid):null); G.till=G.till||{};
+  const cap=Math.round((TILL[b.t]||120)*(.8+h2(b.id|0,7,G.seed|0)*.5)*(1+((V&&V.tier)||0)*.2)), rec=G.till[b.id]||(G.till[b.id]={});
+  if(rec.c==null){ rec.c=Math.round(cap*(.55+h2(b.id|0,11,G.seed|0)*.35)); rec.t=G.whrs; rec.pop=1; }
+  if(rec.pop==null)rec.pop=1;
+  const dt=clamp(G.whrs-rec.t,0,336); if(dt>0){ rec.t=G.whrs; rec.pop+=(1-rec.pop)*(1-Math.pow(.5,dt/72));                  // popularity fades back to normal unless people keep coming
+    const target=cap*clamp(.25+rec.pop*.55,.1,1.7); rec.c=Math.round(rec.c+(target-rec.c)*(1-Math.pow(.5,dt/30))); }
+  rec.c=Math.max(0,rec.c); return {cap,c:rec.c,rec};
 }
 function robNearV(P){ for(const V of G.vlist){ if(V.active&&Math.hypot(V.cx-P.x,V.cy-P.y)<V.L+40)return V; } return null; }
 function robChance(n,w,extra){                                          // the chance they hand it over: most people comply, a smaller share refuse; a weapon helps, bravery and temper hurt
@@ -5415,7 +5586,7 @@ function robAlarm(IN,a){ for(const o of IN.actors){ if(o===a||o.mode==='sleep'||
 function robEnd(line){ if(G.talk){ talkSay(line); G.talk.bye=2.8; } }
 function robNpc(n,V){
   if(n.wanderer)return robWand(n);
-  if(G.in&&n._a&&(n._a.mode==='keeper'||n._a.role)&&G.in.R&&G.in.R.sp)return robShop(n,V);
+  if(G.in&&n._a&&(n._a.mode==='keeper'||n._a.role)&&G.in.R&&G.in.R.sp)return G.in.b.t==='bank'?robBank(n,V):robShop(n,V);
   return robPerson(n,V);
 }
 /* a passer-by, a villager, a farmer, a priest, a law officer: anyone with a name */
@@ -5429,16 +5600,161 @@ function robPerson(n,V){
   if(IN){ IN.heat=(IN.heat||0)+2+(law?1.5:0); IN.looted=(IN.looted||0)+1; IN.loot=1; IN.sig=IN.sig||outfitSig(P); }
   if(ok){
     let stash=0; if(t.ho<=3&&pu.c>20&&Math.random()<.6){ stash=Math.round(pu.c*.35); pu.c-=stash; }                       // the dishonest hide a little of it
-    const res=robTake(pu); pu.c=stash; pu.r=1; pu.t=G.whrs; let amt=res.amt;
-    if(box&&box.c>0){ amt+=box.c; P.cash+=box.c; box.rec.r=1; box.rec.t=G.whrs; }
-    sfx.coin&&sfx.coin(); toast('ROBBED '+n.name+(law?' (OFFICER)':'')+'  +'+fmtM(amt)+(res.got.length?'  '+res.got.join(', '):''),AMB,true);
-    n.mem.op=Math.max(-100,n.mem.op-40); n.angry=60; robEnd(robSay(n,'ok'));
+    pu.r=1; pu.t=G.whrs; if(box)box.rec.pop=Math.max(.2,box.rec.pop-.3);
+    const src={it:pu.it, get c(){ return pu.c+(box?box.rec.c:0); }, takeCash(){ const c=pu.c+(box?box.rec.c:0); pu.c=0; if(box)box.rec.c=0; return c; }, done(){ pu.c+=stash; }};
+    toast('YOU ROBBED '+n.name+(law?' (OFFICER)':''),AMB,true);
+    n.mem.op=Math.max(-100,n.mem.op-40); n.angry=60; shoutStart(n); lootOpen(n,V,src,robSay(n,'ok'));
     if(a){ robFlee(a); robAlarm(IN,a); }
     else{ n.cSig=outfitSig(P); n.cItem=heldId(); n.cLast={x:n.x,y:n.y}; witnessScan(V,'theft',law?4:3); if(law)reportCrime(V,n,4,'loot',true); else startReport(V,n,3,'loot'); }
   } else{
     toast(n.name+' FIGHTS BACK',RED,true); n.mem.op=Math.max(-100,n.mem.op-30); n.angry=80; robEnd(robSay(n,'fail'));
     if(a){ IN.forced=1; if(!a.rx||a.rx==='ask'||a.rx==='shout')rxStart(a,IN,Math.max(2.4,IN.heat),'loot'); }
     else{ n.cSig=outfitSig(P); n.cItem=heldId(); n.cLast={x:n.x,y:n.y}; witnessScan(V,'assault',law?4:3); if(law)reportCrime(V,n,4,'assault',true); if(Math.random()<(law?.9:(t.te>=6||t.br>=7)?.6:.25))robHurt(n,(law?1.4:1)*((w&&w.l)?1:.8)); }
+  }
+}
+/* ---- a held-up victim shows what they carry: their things on the left, your pack on the right. Click a thing then a pack slot, or shift-click to send it straight to the pack; nothing moves if it will not fit. ---- */
+function lootOpen(n,V,src,line){ talkClose(); G.loot={n,V,src,line,sel:-1,scroll:0}; openUI('loot'); }
+function lootFinish(){ const L=G.loot; G.loot=null; if(L&&L.src.done)L.src.done(); }
+function lootCash(){ const L=G.loot, P=G.pl, c=L.src.takeCash(); if(c>0){ P.cash+=c; sfx.coin&&sfx.coin(); toast('+'+fmtM(c),GRN); } }
+function lootMove(idx,slot){
+  const L=G.loot, e=L.src.it[idx]; if(!e||!ITEMS[e[0]])return; const id=e[0], st=ITEMS[id].stack; let k;
+  if(slot==null){ if(!canFit(id,e[1])){ toast('NO SPACE',RED); sfx.err(); return; } k=e[1]; addItem(id,k); }
+  else{ if(slot>=packCap())return; const sl=G.inv[slot]; if(sl&&sl.id!==id){ toast('THAT SLOT IS TAKEN',RED); sfx.err(); return; } const room=sl?st-sl.n:st; if(room<=0){ toast('NO SPACE',RED); sfx.err(); return; } k=Math.min(room,e[1]); if(sl)sl.n+=k; else G.inv[slot]={id,n:k}; }
+  e[1]-=k; if(e[1]<=0)L.src.it.splice(idx,1); if(L.src.took)L.src.took(id,k); (G.stolen||(G.stolen=[])).push({id,n:k}); L.sel=-1; sfx.pick();
+}
+function drawLoot(){
+  const L=G.loot; if(!L){ closeUI(); return; } const P=G.pl, S=L.src, pw=Math.min(UW-12,312), ph=Math.min(UH-8,172), px=(UW-pw)>>1, py=(UH-ph)>>1, lw=146, sz=14, gap=1;
+  F(0,0,UW,UH,'rgba(0,0,0,.55)'); box(px,py,pw,ph); hit(px,py,pw,ph,()=>{});
+  T('HELD UP  -  '+L.n.name+' '+(L.n.last||''),px+9,py+7,AMB); const ws=fmtM(P.cash); T(ws,px+pw-9,py+7,'#f0d878',1,2); coinIcon(px+pw-9-tw(ws)-9,py+6);
+  F(px+8,py+19,pw-16,1,'#3a3830'); T('"'+L.line+'"',px+9,py+23,DIM);
+  const rh=11, top=py+34, vis=Math.floor((ph-62)/rh), c=S.c, rows=(c>0?1:0)+S.it.length, shift=!!(KEYS_.ShiftLeft||KEYS_.ShiftRight); L.scroll=clamp(L.scroll,0,Math.max(0,rows-vis));
+  T('THEIRS',px+9,top-8,DIM); if(!rows)T('NOTHING LEFT',px+12,top+2,DIM);
+  for(let i=0;i<vis&&L.scroll+i<rows;i++){
+    const ri=L.scroll+i, y=top+i*rh, cash=c>0&&ri===0, ix=ri-(c>0?1:0), e=cash?null:S.it[ix], sel=!cash&&L.sel===ix, hv=mouse.ux>=px+9&&mouse.ux<px+9+lw&&mouse.uy>=y-1&&mouse.uy<y+rh-1;
+    if(sel)F(px+8,y-1,lw+2,rh,'rgba(224,168,74,.18)');
+    if(cash){ coinIcon(px+12,y+1); T('COINS',px+23,y+2,hv?AMB:FG); T(fmtM(c),px+9+lw-1,y+2,'#f0d878',1,2); hit(px+8,y-1,lw+2,rh,()=>lootCash()); }
+    else{ XU.drawImage(iconCv(e[0]),px+10,y); T(ITEMS[e[0]].n.slice(0,17),px+23,y+2,sel||hv?AMB:FG); if(e[1]>1)T('X'+e[1],px+9+lw-1,y+2,FG,1,2);
+      hit(px+8,y-1,lw+2,rh,()=>{ if(KEYS_.ShiftLeft||KEYS_.ShiftRight){ lootMove(ix,null); } else{ L.sel=L.sel===ix?-1:ix; sfx.tick(); } }); }
+  }
+  if(rows>vis){ const bh=Math.max(8,Math.round(vis*rh*vis/rows)), by=top+Math.round((vis*rh-bh)*L.scroll/(rows-vis)); F(px+9+lw+3,top,1,vis*rh,'#26251f'); F(px+9+lw+3,by,1,bh,'#a98a52'); }
+  const gx=px+pw-9-(HOT*(sz+gap)-gap); F(gx-6,py+30,1,ph-38,'#3a3830'); T('YOUR PACK',gx,top-8,DIM);
+  for(let i=0;i<packCap();i++){ const col=i%HOT, row=Math.floor(i/HOT), x=gx+col*(sz+gap), y=top+row*(sz+gap)+(row>0?3:0);
+    slotBox(x,y,sz,i,false);
+    hit(x,y,sz,sz,()=>{ if(shift&&G.inv[i]){ shiftMove(i); G.invSel=-1; sfx.tick(); return; } if(L.sel>=0){ lootMove(L.sel,i); return; } if(G.invSel<0){ if(G.inv[i])G.invSel=i; } else if(G.invSel===i)G.invSel=-1; else{ slotSwap(G.invSel,i); G.invSel=-1; } sfx.tick(); });
+  }
+  const by=py+ph-15; let bx=px+9;
+  if(L.sel>=0&&S.it[L.sel])bx+=btn(bx,by,'TAKE',()=>lootMove(L.sel,null))+3;
+  bx+=btn(bx,by,'TAKE ALL',()=>{ if(S.c>0)lootCash(); for(let i=0;i<S.it.length;){ const e=S.it[i]; if(e&&ITEMS[e[0]]&&canFit(e[0],e[1]))lootMove(i,null); else i++; } if(S.it.length)toast('SOME THINGS WILL NOT FIT',RED); })+3;
+  btn(bx,by,'LET THEM GO',()=>closeUI());
+  T(L.sel>=0?'NOW CLICK A PACK SLOT, OR TAKE':'CLICK A THING, THEN A PACK SLOT. SHIFT-CLICK SENDS IT STRAIGHT IN',px+9,py+ph-26,DIM);
+}
+/* ---- the robbed one keeps shouting: neighbours turn, the law is told, and the longer it goes on the worse the case gets ---- */
+function shoutStart(n){ n.shout={N:0,next:T_+.6,sig:outfitSig(G.pl),item:heldId()}; }
+function shoutTick(){
+  const P=G.pl; if(!P||G.dead)return; const V0=robNearV(P), list=[];
+  for(const V of G.vlist){ if(!V.active)continue; for(const n of V.npcs)if(n.shout)list.push([V,n]); }
+  for(const w of (G.wand||[]))if(w.shout)list.push([V0,w]);
+  for(const [V,n] of list){
+    const s=n.shout; if(!V||s.N>=16||n.hp<=0){ n.shout=null; continue; } if(n.inside||n.sleeping||T_<s.next)continue;
+    s.N++; s.next=T_+2.2+Math.random()*1.4; n.dirLock=1; V.alert=100;
+    if(!G.in&&Math.hypot(P.x-n.x,P.y-n.y)<14&&s.N%3===1)toast(n.name+': '+pickR(['THIEF! I HAVE BEEN ROBBED!','HELP! GUARDS! HELP!','STOP THAT THIEF!']),RED);
+    shoutAlert(V,n,'theft');
+    if(n.wanderer||!n.mem)continue;
+    if(s.N===2||s.N===6||s.N===11){ n.cSig=s.sig; n.cItem=s.item; n.cLast={x:n.x,y:n.y}; const law=n.job==='guard'||!!n.militia; reportCrime(V,n,law?4:s.N>=6?4:3,'loot',law); }
+    if(s.N===4||s.N===9){ const w=bestRec(V); if(w)for(const g of V.npcs){ if(isResp(V,g)&&!g.inside&&!g.sleeping&&!g.hunt&&Math.hypot(g.x-n.x,g.y-n.y)<40)tellResp(V,g,w); } }
+  }
+}
+/* ---- BANKS: the vault holds real money that follows the town (its age, its people, how often they come), keeps a minimum, pays interest on accounts, and sometimes says no ---- */
+const bankOf=V=>V._bk!==undefined?V._bk:(V._bk=V.B.find(b=>b.t==='bank')||null);
+const BANK_CAP={1:25000,2:60000,3:180000};
+const bankRate=()=>.03;                                                            // interest per day, the same at every bank
+function bankV(b,V){
+  V=V||(b.vid!=null?G.vil.get(b.vid):null); G.bankV=G.bankV||{}; let tr=0,cnt=0;
+  if(V)for(const n of V.npcs)if(n.tr){ tr+=(n.tr.ho||5)+(n.tr.pi||5)*.5; cnt++; }
+  const trust=cnt?tr/cnt/7.5:1, age=1+Math.min(.6,G.whrs/24/90*.6), size=1+(V?Math.min(.5,V.npcs.length/160):0);
+  const cap=Math.round((BANK_CAP[(V&&V.tier)||2]||40000)*(.8+h2(b.id|0,13,G.seed|0)*.5)*age*(.85+.15*Math.min(1.4,trust))*size), rec=G.bankV[b.id]||(G.bankV[b.id]={});
+  if(rec.c==null){ rec.c=Math.round(cap*(.5+h2(b.id|0,17,G.seed|0)*.3)); rec.t=G.whrs; rec.pop=1; rec.gold=Math.max(1,Math.round(cap/60000)); }
+  if(rec.pop==null)rec.pop=1; const min=Math.round(cap*.18), dt=clamp(G.whrs-rec.t,0,336);
+  if(dt>0){ rec.t=G.whrs; rec.pop+=(1-rec.pop)*(1-Math.pow(.5,dt/72)); const tg=cap*clamp(.3+rec.pop*.5,.2,1.6); rec.c=Math.round(rec.c+(tg-rec.c)*(1-Math.pow(.5,dt/36)));
+    const gt=Math.max(1,Math.round(cap/60000)); if(rec.gold<gt&&Math.random()<dt/96)rec.gold++; }
+  rec.c=Math.max(min,rec.c); return {cap,min,rec,V};
+}
+function acctOf(){                                                                 // one account for the whole island: bank in one town, draw it out in another
+  G.bankA=G.bankA||{}; let a=G.bankA.all;
+  if(!a){ a=G.bankA.all={bal:0,t:G.whrs,earn:0}; for(const k of Object.keys(G.bankA)){ if(k==='all')continue; const o=G.bankA[k]; if(o&&typeof o==='object'&&o.bal!==undefined){ a.bal+=o.bal; a.earn+=o.earn||0; } delete G.bankA[k]; } }
+  const dt=G.whrs-a.t; a.t=G.whrs; if(dt>0&&a.bal>0){ const nb=a.bal*Math.pow(1+bankRate(),dt/24); a.earn=(a.earn||0)+(nb-a.bal); a.bal=nb; } return a;
+}
+function wantsBank(V,n,dn){ if(!n.mem)return false; const pu=purseOf(n,V), sv=n.mem.sv||0; return hr01(n.id,dn,61)<(sv>0?.5:.22)&&(pu.c>70||(sv>0&&pu.c<30)); }
+function bankVisit(V,n,b){                                                          // a villager banks a little of what they carry, or draws on their savings when the purse runs low
+  const pu=purseOf(n,V), v=bankV(b,V), m=n.mem; let sv=m.sv||0; const dt=G.whrs-(m.svT||G.whrs); if(sv>0&&dt>0)sv*=Math.pow(1+bankRate(),dt/24); m.svT=G.whrs;
+  if(pu.c>70){ const dep=Math.round(pu.c*(.35+hr01(n.id,G.dn,62)*.4)); pu.c-=dep; sv+=dep; v.rec.c+=dep; v.rec.pop=Math.min(2.5,v.rec.pop+.05); }
+  else if(sv>0&&pu.c<30){ const w=Math.min(Math.round(sv),Math.round(40+hr01(n.id,G.dn,63)*60),Math.max(0,v.rec.c-v.min)); if(w>0){ sv-=w; pu.c+=w; v.rec.c-=w; v.rec.pop=Math.min(2.5,v.rec.pop+.02); } }
+  m.sv=Math.round(sv*100)/100;
+}
+function openBank(b,V,n){ G.bank={b,V,n,msg:''}; openUI('bank'); }
+function bankWhy(S,kind,amt){
+  const b=S.b, V=S.V, v=bankV(b,V);
+  if(!bldOpen(b).open)return 'WE ARE CLOSED.';
+  if(S.n&&S.n.mem&&S.n.mem.op<=-25)return 'NOT FOR YOU. GET OUT.';
+  if(V&&matchedRec(V))return 'I KNOW YOUR FACE FROM THE NOTICES. NO.';
+  if(kind==='out'){ if(amt>v.rec.c-v.min)return 'WE DO NOT HAVE THAT IN THE VAULT TODAY.'; if(amt>=v.cap*.2&&h2(b.id|0,G.dn|0,5)<.5)return 'THAT IS A LOT. COME BACK TOMORROW, WITH NOTICE.'; if(Math.random()<.05)return 'THE LEDGERS ARE BEING BALANCED. TRY AGAIN IN A MOMENT.'; }
+  return null;
+}
+function bankDo(kind,amt){
+  const S=G.bank, P=G.pl, b=S.b, A=acctOf(b), v=bankV(b,S.V), why=bankWhy(S,kind==='in'||kind==='coinsin'||kind==='goldsell'?'in':'out',kind==='coinsout'?amt*100:amt);
+  if(why){ S.msg=why; sfx.err(); return; }
+  if((kind==='in'||kind==='out')&&amt<=0){ S.msg='ENTER AN AMOUNT FIRST.'; sfx.err(); return; }
+  if(kind==='in'){ amt=Math.min(amt,P.cash); if(amt<=0){ S.msg='NOTHING IN YOUR WALLET.'; sfx.err(); return; } P.cash-=amt; A.bal+=amt; v.rec.c+=amt; v.rec.pop=Math.min(2.5,v.rec.pop+.02); S.msg='DEPOSITED '+fmtM(amt); sfx.coin&&sfx.coin(); }
+  else if(kind==='out'){ amt=Math.min(amt,Math.floor(A.bal)); if(amt<=0){ S.msg='NO SAVINGS TO DRAW ON.'; sfx.err(); return; } if(amt>v.rec.c-v.min){ S.msg='WE DO NOT HAVE THAT IN THE VAULT TODAY.'; sfx.err(); return; } A.bal-=amt; P.cash+=amt; v.rec.c-=amt; S.msg='WITHDREW '+fmtM(amt); sfx.coin&&sfx.coin(); }
+  else if(kind==='coinsin'){ const n=amt>0?Math.min(amt,countItem('coins')):countItem('coins'); if(n<=0){ S.msg='YOU HAVE NO COINS.'; sfx.err(); return; } takeItem('coins',n); A.bal+=n*100; v.rec.c+=n*100; S.msg='BANKED '+n+' COINS'; sfx.coin&&sfx.coin(); }
+  else if(kind==='coinsout'){ const n=Math.min(amt,Math.floor(A.bal/100)); if(n<=0){ S.msg='NOT ENOUGH SAVINGS.'; sfx.err(); return; } if(n*100>v.rec.c-v.min){ S.msg='WE DO NOT HAVE THAT IN THE VAULT TODAY.'; sfx.err(); return; } if(!canFit('coins',n)){ S.msg='NO ROOM IN YOUR PACK.'; sfx.err(); return; } A.bal-=n*100; v.rec.c-=n*100; addItem('coins',n); S.msg='TOOK '+n+' COINS'; sfx.coin&&sfx.coin(); }
+  else if(kind==='goldsell'){ if(countItem('goldbar')<1){ S.msg='YOU HAVE NO GOLD BARS.'; sfx.err(); return; } const pay=Math.round(20000*.96); if(pay>v.rec.c-v.min){ S.msg='THE VAULT CANNOT PAY FOR IT TODAY.'; sfx.err(); return; } takeItem('goldbar',1); P.cash+=pay; v.rec.c-=pay; v.rec.gold++; S.msg='SOLD A GOLD BAR  +'+fmtM(pay); sfx.coin&&sfx.coin(); }
+  else if(kind==='goldbuy'){ const pr=Math.round(20000*1.06); if(!(v.rec.gold>0)){ S.msg='NO GOLD BARS IN STOCK.'; sfx.err(); return; } if(P.cash<pr){ S.msg='NOT ENOUGH MONEY.'; sfx.err(); return; } if(!canFit('goldbar',1)){ S.msg='NO ROOM IN YOUR PACK.'; sfx.err(); return; } P.cash-=pr; v.rec.c+=pr; v.rec.gold--; addItem('goldbar',1); S.msg='BOUGHT A GOLD BAR  -'+fmtM(pr); sfx.coin&&sfx.coin(); }
+}
+const bankAmt=S=>Math.round((parseFloat(S.amt||'0')||0)*100);
+function bankKey(e){                                                              // type any amount, cents included: 0.35, 1, 12.5
+  const S=G.bank; if(!S)return false; const k=e.code; let ch=e.key;
+  if(k==='Backspace'){ S.amt=(S.amt||'').slice(0,-1); e.preventDefault(); return true; }
+  if(ch&&ch.length===1&&/[0-9.,]/.test(ch)){ if(ch===',')ch='.'; const a=S.amt||''; e.preventDefault();
+    if(ch==='.'&&a.indexOf('.')>=0)return true; if(a.indexOf('.')>=0&&a.split('.')[1].length>=2)return true; if(a.length>=9)return true; S.amt=a+ch; return true; }
+  return false;
+}
+function drawBank(){
+  const S=G.bank; if(!S){ closeUI(); return; } const P=G.pl, b=S.b, A=acctOf(), v=bankV(b,S.V), pw=Math.min(UW-12,330), ph=Math.min(UH-8,172), px=(UW-pw)>>1, py=(UH-ph)>>1, am=bankAmt(S);
+  F(0,0,UW,UH,'rgba(0,0,0,.55)'); box(px,py,pw,ph); hit(px,py,pw,ph,()=>{});
+  T('BANK  -  '+(S.n?S.n.name+' '+(S.n.last||''):''),px+9,py+7,AMB); const ws=fmtM(P.cash); T(ws,px+pw-9,py+7,'#f0d878',1,2); coinIcon(px+pw-9-tw(ws)-9,py+6); F(px+8,py+19,pw-16,1,'#3a3830');
+  T('SAVINGS',px+9,py+24,DIM); T(fmtM(Math.floor(A.bal)),px+9+tw('SAVINGS')+6,py+24,'#f0d878'); T((bankRate()*100).toFixed(0)+'% A DAY  EARNED '+fmtM(Math.floor(A.earn||0)),px+pw-9,py+24,GRN,1,2);
+  T('PACK: '+countItem('coins')+' COINS, '+countItem('goldbar')+' GOLD BARS  (SAME ACCOUNT AT EVERY BANK)',px+9,py+33,DIM);
+  let y=py+46; T('AMOUNT  $',px+9,y+2,FG); const fx=px+9+tw('AMOUNT  $'), fw=58; F(fx,y-1,fw,11,'#14130f'); F(fx,y-1,fw,1,AMB); T((S.amt||'')+(Math.floor(T_*2)%2?'_':' '),fx+3,y+2,AMB);
+  let x=fx+fw+6; for(const [t,c] of [['+.01',1],['+.10',10],['+1',100],['+10',1000]])x+=btn(x,y,t,()=>{ S.amt=(((parseFloat(S.amt||'0')||0)*100+c)/100).toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1'); sfx.tick(); })+2; btn(x,y,'CLEAR',()=>{ S.amt=''; sfx.tick(); });
+  y+=13; T('TYPE ANY AMOUNT, CENTS TOO',px+9,y+2,DIM); y+=11;
+  const row=(lab,list)=>{ T(lab,px+9,y+2,FG); let x=px+9+66; for(const [t,fn] of list)x+=btn(x,y,t,fn)+3; y+=13; };
+  row('WALLET',[['DEPOSIT '+fmtM(am),()=>bankDo('in',am)],['WITHDRAW '+fmtM(am),()=>bankDo('out',am)]]);
+  row('',[['DEPOSIT ALL',()=>bankDo('in',P.cash)],['WITHDRAW ALL',()=>bankDo('out',Math.floor(A.bal))]]);
+  row('COINS',[['BANK '+(am>=100?Math.floor(am/100)+' COINS':'ALL COINS'),()=>bankDo('coinsin',Math.floor(am/100))],['TAKE '+Math.max(1,Math.floor(am/100))+' AS COINS',()=>bankDo('coinsout',Math.max(1,Math.floor(am/100)))]]);
+  row('GOLD BARS',[['SELL ONE '+fmtM(Math.round(20000*.96)),()=>bankDo('goldsell',0)],['BUY ONE '+fmtM(Math.round(20000*1.06)),()=>bankDo('goldbuy',0)]]);
+  if(S.msg)T(S.msg,px+9,py+ph-26,S.msg.indexOf('NOT')===0||S.msg.indexOf('WE ')===0||S.msg.indexOf('I KNOW')===0||S.msg.indexOf('THAT')===0||S.msg.indexOf('ENTER')===0?RED:AMB);
+  btn(px+9,py+ph-15,'CLOSE',()=>closeUI());
+}
+function bankAlarm(V,n){                                                            // a robbery of the bank brings every officer, and they shoot to stop you
+  const P=G.pl; n.cSig=outfitSig(P); n.cItem=heldId(); n.cLast=curPos(V); V.alert=100; vlog(V,'THE BANK WAS HELD UP. EVERY OFFICER HAS BEEN CALLED.');
+  reportCrime(V,n,4,'bank',false); const r=bestRec(V);
+  if(r){ r.sev=4; r.until=Math.max(r.until,G.whrs+6); for(const g of V.npcs){ if(isResp(V,g)&&!g.sleeping)tellResp(V,g,r); } }
+  G.noCatch=0; G.lethal={V}; toast('EVERY OFFICER HAS BEEN CALLED  -  THEY WILL SHOOT',RED,true); sfx.err();
+}
+function robBank(n,V){
+  const P=G.pl, IN=G.in, a=n._a, b=IN.b, id=heldId(), w=id&&WEAP[id]?WEAP[id]:null, t=n.tr||{br:5,te:5,ho:5}, v=bankV(b,V), avail=Math.max(0,v.rec.c-v.min), gold=v.rec.gold|0;
+  if(avail<=8&&!gold){ talkSay('THE VAULT IS DOWN TO ITS LAST COINS. THERE IS NOTHING FOR YOU.'); return; }
+  const near=IN.actors.filter(o=>o!==a&&o.mode!=='sleep'&&Math.hypot(o.x-a.x,o.y-a.y)<8).length, ok=Math.random()<robChance(n,w,-.3-.04*Math.min(3,near));
+  n.mem.met=Math.max(1,n.mem.met||0); n.mem.theft=(n.mem.theft||0)+1; n.talk=false; panicWake(IN,IN.q.x,IN.q.y,14);
+  IN.heat=(IN.heat||0)+4; IN.looted=(IN.looted||0)+1; IN.loot=1; IN.sig=IN.sig||outfitSig(P); bankAlarm(V,n);
+  if(ok){
+    v.rec.pop=Math.max(.2,v.rec.pop-.5); const src={it:gold?[['goldbar',gold]]:[], get c(){ return Math.max(0,v.rec.c-v.min); }, takeCash(){ const c=Math.max(0,v.rec.c-v.min); v.rec.c-=c; return c; }, took(id2,k){ if(id2==='goldbar')v.rec.gold=Math.max(0,(v.rec.gold|0)-k); }};
+    toast('YOU ROBBED THE BANK',AMB,true); n.mem.op=Math.max(-100,n.mem.op-60); n.angry=80; shoutStart(n);
+    lootOpen(n,V,src,pickR(["TAKE IT! THE VAULT IS OPEN! JUST DO NOT HURT ANYONE!","THE LAW WILL HUNT YOU TO THE END OF THE ISLE.","PLEASE... TAKE THE MONEY AND GO!"])); robFlee(a); robAlarm(IN,a);
+  } else{
+    toast(n.name+' RAISES THE ALARM',RED,true); n.mem.op=Math.max(-100,n.mem.op-40); n.angry=90; robEnd(pickR(["NOT IN MY BANK! GUARDS!","THE BANK DOES NOT HAND IT OVER TO THIEVES!"]));
+    IN.forced=1; if(!a.rx||a.rx==='ask'||a.rx==='shout')rxStart(a,IN,Math.max(3,IN.heat),'loot');
   }
 }
 /* a shop: the till, the shelves and whatever the keeper is carrying */
@@ -5450,13 +5766,14 @@ function robShop(n,V){
   n.mem.met=Math.max(1,n.mem.met||0); n.mem.theft=(n.mem.theft||0)+1; n.talk=false; panicWake(IN,IN.q.x,IN.q.y,12);
   IN.heat=(IN.heat||0)+2.5; IN.looted=(IN.looted||0)+1; IN.loot=1; IN.sig=IN.sig||outfitSig(P);
   if(ok){
-    let amt=till.c; P.cash+=amt; till.rec.r=1; till.rec.t=G.whrs; const got=[];
+    till.rec.pop=Math.max(.2,till.rec.pop-.3); const items=[];
     const pick=left.map(k=>({k,s:itemVal(k)*(.4+Math.random()*1.2)})).sort((x,y)=>y.s-x.s), nk=1+Math.floor(Math.random()*3)+(till.cap>250?1:0);
-    for(const e of pick.slice(0,nk)){ let take=Math.min(q[e.k],1+Math.floor(Math.random()*3)); while(take>0&&!canFit(e.k,take))take--; if(take>0){ addItem(e.k,take); q[e.k]-=take; got.push(take+' '+ITEMS[e.k].n); (G.stolen||(G.stolen=[])).push({id:e.k,n:take}); } }
-    const res=robTake(pu); pu.r=1; pu.t=G.whrs; amt+=res.amt; for(const g of res.got)got.push(g);
-    sfx.coin&&sfx.coin(); toast('ROBBED THE '+BT[b.t].n+'  +'+fmtM(amt)+(got.length?'  '+got.join(', '):''),AMB,true);
+    for(const e of pick.slice(0,nk)){ const take=Math.min(q[e.k],1+Math.floor(Math.random()*3)); if(take>0)items.push([e.k,take]); }
+    for(const e of pu.it)items.push(e); pu.r=1; pu.t=G.whrs;
+    const src={it:items, get c(){ return till.rec.c+pu.c; }, takeCash(){ const c=till.rec.c+pu.c; till.rec.c=0; pu.c=0; return c; }, took(id,k){ if(q[id]!==undefined)q[id]=Math.max(0,q[id]-k); const e=pu.it.find(x=>x[0]===id); if(e){ e[1]-=k; if(e[1]<=0)pu.it.splice(pu.it.indexOf(e),1); } }};
+    toast('YOU ROBBED THE '+BT[b.t].n,AMB,true);
     n.mem.op=Math.max(-100,n.mem.op-45); n.angry=70; if(V)vlog(V,"THE "+BT[b.t].n+" WAS ROBBED AT WEAPON POINT. THE TILL IS EMPTY.");
-    robEnd(t.br<=5?pickR(["TAKE THE TILL! JUST DO NOT HURT ANYONE!","THE MONEY IS IN THE DRAWER! TAKE IT AND GO!","PLEASE, I HAVE A FAMILY! TAKE WHAT YOU WANT!"]):pickR(["FINE. TAKE IT. THE GUARD WILL HEAR OF THIS.","YOU WILL NEVER SET FOOT IN MY SHOP AGAIN."]));
+    shoutStart(n); lootOpen(n,V,src,t.br<=5?pickR(["TAKE THE TILL! JUST DO NOT HURT ANYONE!","THE MONEY IS IN THE DRAWER! TAKE IT AND GO!","PLEASE, I HAVE A FAMILY! TAKE WHAT YOU WANT!"]):pickR(["FINE. TAKE IT. THE GUARD WILL HEAR OF THIS.","YOU WILL NEVER SET FOOT IN MY SHOP AGAIN."]));
     robFlee(a); robAlarm(IN,a);
   } else{
     toast(n.name+' DEFENDS THE SHOP',RED,true); n.mem.op=Math.max(-100,n.mem.op-30); n.angry=80; robEnd(pickR(["NOT IN MY SHOP, THIEF!","GET OUT OF MY SHOP!","YOU PICKED THE WRONG SHOP!"]));
@@ -5472,9 +5789,9 @@ function robWand(w){
   w.mem.met=Math.max(1,w.mem.met||0); w.mem.theft=(w.mem.theft||0)+1; w.mem.robbed=G.whrs; w.talk=false;
   if(ok){
     let stash=0; if((t.ho<=3||w.thief)&&w.cash>20&&Math.random()<.6){ stash=Math.round(w.cash*.3); w.cash-=stash; }
-    const pu={c:w.cash,it:w.bag.map(e=>e.slice())}, res=robTake(pu); w.cash=pu.c+stash; w.bag=pu.it; if(!w.bag.length)w.poor=1; w.hun=Math.min(100,(w.hun||0)+(res.got.length?15:0));
-    sfx.coin&&sfx.coin(); toast('ROBBED '+w.name+'  +'+fmtM(res.amt)+(res.got.length?'  '+res.got.join(', '):''),AMB,true);
-    w.mem.op=Math.max(-100,w.mem.op-45); w.angry=60; robEnd(robSay(w,'ok')); wAggro(w); if(V)witnessScan(V,'theft',2);
+    const src={it:w.bag, get c(){ return w.cash; }, takeCash(){ const c=w.cash; w.cash=0; return c; }, done(){ w.cash+=stash; if(!w.bag.length&&w.cash<=0)w.poor=1; }};
+    toast('YOU ROBBED '+w.name,AMB,true);
+    w.mem.op=Math.max(-100,w.mem.op-45); w.angry=60; shoutStart(w); lootOpen(w,V,src,robSay(w,'ok')); wAggro(w); if(V)witnessScan(V,'theft',2);
   } else{
     toast(w.name+' FIGHTS BACK',RED,true); w.mem.op=Math.max(-100,w.mem.op-30); w.angry=80; robEnd(robSay(w,'fail')); wAggro(w);
     if(V)witnessScan(V,'assault',2);
@@ -5528,9 +5845,10 @@ function bodyAI(V,dt){
   for(const b of bs){ if(b.rep)continue; for(const n of V.npcs){ if(n.inside||n.hid||n.sleeping||n.busy||n.talk)continue; if(Math.hypot(n.x-b.x,n.y-b.y)<6.5&&lineClear(n.x,n.y,b.x,b.y)){ bodyDiscover(V,n,b); break; } } }
   const j=V.bodyJob; if(j){ const c=V.npcs.find(n=>n.key===j.key); if(c&&c.busy&&c.busy.k==='body'||c&&c.busy&&c.busy.k==='dig')return; V.bodyJob=null; }
   if(activeRecs(V).length||V.npcs.some(g=>g.hunt))return;                 // not while the place is still in uproar
-  const b=bs.filter(x=>x.rep&&!x.rotOnly&&G.whrs-x.t0>.25).sort((p,q)=>p.t0-q.t0)[0]; if(!b||Math.random()>.1)return;
-  const c=V.npcs[Math.floor(Math.random()*V.npcs.length)]; if(!c||c.age<19||c.inside||c.hid||c.busy||c.hunt||c.talk||c.sleeping||c.chat&&G.whrs<c.chat.until)return;
-  const will=clamp(.12+c.tr.br*.035+c.tr.pi*.03+(c.job==='priest'?.4:0)+(c.job==='guard'?.3:0)+(['farmhand','farmer','doctor'].includes(c.job)?.1:0)-(c.age>66?.2:0),.03,.9);
+  const b=bs.filter(x=>x.rep&&!x.rotOnly&&G.whrs-x.t0>.12).sort((p,q)=>p.t0-q.t0)[0]; if(!b||Math.random()>.3)return;       // once the uproar is over, somebody sees to the body fairly soon
+  const free=V.npcs.filter(c=>c.age>=19&&!c.inside&&!c.hid&&!c.busy&&!c.hunt&&!c.talk&&!c.sleeping&&!(c.chat&&G.whrs<c.chat.until)), offs=free.filter(c=>isResp(V,c));
+  const c=offs.length&&Math.random()<.6?offs[Math.floor(Math.random()*offs.length)]:free[Math.floor(Math.random()*free.length)]; if(!c)return;                 // the law often does it itself
+  const will=clamp(.35+c.tr.br*.03+c.tr.pi*.025+(c.job==='priest'?.4:0)+(c.job==='guard'||c.militia?.4:0)+(['farmhand','farmer','doctor'].includes(c.job)?.1:0)-(c.age>66?.2:0),.1,.95);
   if(Math.random()>will){ b.refused=(b.refused||0)+1; if(b.refused>=3&&Math.random()<.5)b.rotOnly=1; return; }   // some people turn away and leave it
   c.busy={k:'body',bid:b.id,ph:'go'}; c.spd=1.45; V.bodyJob={key:c.key}; routeTo(V,c,{x:b.x,y:b.y,inside:null,k:'body'});
 }
@@ -5542,7 +5860,50 @@ function bodyArrive(V,n,bj){
     else{ n.busy={k:'dig',bid:b.id,t:7+Math.random()*4,x:n.x,y:n.y}; } }
 }
 function bodyStage(b){ const a=G.whrs-b.t0; return a<4?0:a<14?1:a<40?2:3; }
+/* ---- something unusual: people notice it, grow wary, then talk, then the law hears of it ---- */
+function oddOf(P){
+  if(P.carry)return {k:'body',s:3,t:[1.5,4,8]};
+  return null;
+}
+function oddScan(dt){ try{ oddScan_(dt); }catch(e){ console.error(e); } }
+function oddScan_(dt){
+  const P=G.pl; if(!P||G.in||G.dead||G.sleep||G.tr)return; P._oddA=(P._oddA||0)+dt; if(P._oddA<.25)return; const st=P._oddA; P._oddA=0;
+  const V=robNearV(P), od=oddOf(P); if(!V){ return; }
+  const rg=Math.max(8,sightRange(P)); let hot=0;
+  for(const n of V.npcs){
+    if(n.inside||n.hid||n.sleeping||n.st==='inside'||n.age<10||!n.mem||!n.tr){ continue; }
+    if(!od||!npcSees(n,P,rg)){ n.odT=Math.max(0,(n.odT||0)-st*.5); if(!n.odT)n.odL=0; continue; }
+    if(n.job==='guard'&&P.carry){ n.odT=(n.odT||0)+st*2; } else n.odT=(n.odT||0)+st*(1+(n.tr&&n.tr.br<4?.3:0));
+    const lv=n.odT>=od.t[2]?3:n.odT>=od.t[1]?2:n.odT>=od.t[0]?1:0, was=n.odL||0; if(lv<=was)continue; n.odL=lv;
+    n.dirLock=2; n.dir=dirFrom(P.x-n.x,P.y-n.y); n.mem.met=Math.max(1,n.mem.met||0);
+    if(lv===1){ n.angry=Math.max(n.angry||0,6); }                                                        // they stop and stare
+    else if(lv===2){ n.cSig=outfitSig(P); n.cItem=heldId(); n.cLast=curPos(V); n.mem.op=Math.max(-100,n.mem.op-6); n.angry=Math.max(n.angry||0,14); hot++;   // they remember you and mutter to their neighbours
+      for(const m of V.npcs){ if(m!==n&&!m.inside&&!m.sleeping&&Math.hypot(m.x-n.x,m.y-n.y)<8)m.odT=Math.max(m.odT||0,od.t[0]*1.1); } }
+    else{ n.mem.op=Math.max(-100,n.mem.op-10); n.cSig=outfitSig(P); n.cItem=heldId(); n.cLast=curPos(V); witnessReact(V,n,od.s,od.k); hot++; }
+  }
+  if(hot&&T_-(G._oddToast||0)>10){ G._oddToast=T_; toast('PEOPLE ARE WATCHING YOU',RED,true); sfx.err(); }
+}
+/* ---- changing clothes in sight of the law: officers add the new outfit to the case; a citizen who saw the chase tells them it is the same person ---- */
+function clothesWatch(dt){
+  const P=G.pl; if(!P||G.dead||!P.cl)return; P._cwA=(P._cwA||0)+dt; if(P._cwA<.3)return; P._cwA=0;
+  const sig=outfitSig(P), key=P._sigK;
+  if(G.in||P._wK==null){ P._wK=key; P._wSig=sig; return; }
+  const rg=Math.max(8,sightRange(P));
+  if(key===P._wK){                                                       // note who watches you being chased while wanted
+    for(const V of G.vlist){ if(!V.active||!matchedRec(V))continue; if(!V.npcs.some(g=>isResp(V,g)&&g.hunt&&!g.inside&&Math.hypot(g.x-P.x,g.y-P.y)<24))continue;
+      for(const n of V.npcs){ if(!isResp(V,n)&&!n.inside&&!n.hid&&!n.sleeping&&n.age>=12&&npcSees(n,P,rg))n.sawFlee=G.whrs; } }
+    return; }
+  const from=P._wSig; P._wK=key; P._wSig=sig; if(!from||sigMatch(from,sig))return;
+  for(const V of G.vlist){ if(!V.active)continue; const recs=activeRecs(V).filter(r=>recHasSig(r,from)); if(!recs.length)continue; let law=0, cit=0;
+    for(const n of V.npcs){ if(n.inside||n.hid||n.sleeping||n.age<12||!n.mem||!n.tr)continue; const resp=isResp(V,n); if(!npcSees(n,P,rg+(resp?3:0)))continue;
+      if(resp){ for(const r of recs)recAddSig(r,sig); law++; }
+      else if(n.sawFlee&&G.whrs-n.sawFlee<1.5&&!n.busy&&!n.talk&&Math.random()<clamp(.5+(n.tr.ho||5)*.04,.45,.85)){   // the rest keep it to themselves or look away
+        const r0=recs[0]; n.cSig=from; n.cItem=r0.item; n.cLast=curPos(V); n.linkSig=sig; startReport(V,n,Math.max(2,r0.sev),r0.kind); cit++; } }
+    if(law)toast('AN OFFICER SAW YOU CHANGE  -  THEY KNOW THE NEW OUTFIT TOO',RED,true); else if(cit)toast('SOMEONE SAW YOU CHANGE AND IS TELLING THE LAW',RED,true); }
+}
 function bodyTick(dt){
+  try{ clothesWatch(dt); }catch(e){ console.error(e); }
+  oddScan(dt); try{ shoutTick(); }catch(e){ console.error(e); }
   const P=G.pl, B=G.bodies||[], blood=G.blood||[];
   for(let i=B.length-1;i>=0;i--){ const b=B[i], age=G.whrs-b.t0;
     if(age>95){ B.splice(i,1); continue; }
@@ -5691,9 +6052,10 @@ function arriveBusy(V,n){
 }
 function reportCrime(V,n,sev,kind,onSpot){
   const unk=n.cSig===false, s=vst(V), P=G.pl, sig=unk?null:(n.cSig||outfitSig(P)), item=unk?null:(n.cItem!==undefined?n.cItem:heldId()), last=n.cLast||curPos(V); n.cSig=null; n.cLast=null; n.cItem=undefined;
-  let w=unk?activeRecs(V).find(r=>r.sig===null&&r.last&&Math.hypot(r.last.x-last.x,r.last.y-last.y)<25):activeRecs(V).find(r=>r.sig&&sigMatch(r.sig,sig)&&r.item===item);                                 // the same description as an open case, or someone new
+  let w=unk?activeRecs(V).find(r=>r.sig===null&&r.last&&Math.hypot(r.last.x-last.x,r.last.y-last.y)<25):activeRecs(V).find(r=>r.sig&&recHasSig(r,sig)&&r.item===item);                                 // the same description as an open case, or someone new
   if(w){ w.sev=Math.max(w.sev,sev); w.until=Math.max(w.until,G.whrs+1.6+sev*.9); if(onSpot||!w.scene)w.scene={x:last.x,y:last.y}; w.rep=(w.rep||0)+1; if(w.rep>=4&&w.sev<3)w.sev=3; if(onSpot)w.last=last; if(!w.by)w.by=n.name+' '+n.last; }
   else w=mkRec(V,{sev,sig,item,last,kind,by:n.name+' '+n.last+(n.job==='guard'?' (OFFICER)':'')});
+  if(n.linkSig){ recAddSig(w,n.linkSig); n.linkSig=null; }
   const W=w; V.alert=100;
   if(onSpot){ // an officer (or farmer) who saw it himself: he gives chase and tells only those standing right next to him
     tellResp(V,n,W); for(const g of V.npcs){ if(g!==n&&isResp(V,g)&&!g.inside&&!g.sleeping&&Math.hypot(g.x-n.x,g.y-n.y)<4.5)tellResp(V,g,W); }
@@ -5755,13 +6117,8 @@ function inspectDecide(V,n,b,d){
   const near=!G.in&&Math.hypot(P.x-n.x,P.y-n.y)<12, nm=it.n+(d.n>1?' X'+d.n:'');
   (n.mem.drops||(n.mem.drops=[])).push({id:d.id,h:G.whrs,by:b.saw?'you':null}); if(n.mem.drops.length>4)n.mem.drops.shift();   // they remember it, and whether they saw who dropped it
   const lift=()=>{ const i=G.drops.indexOf(d); if(i>=0)G.drops.splice(i,1); d.claim=null; };
-  if(d.stolen){                                                          // stolen goods lying about: that goes to the law, with a description only if they saw who dropped it
-    lift(); n.cItem=d.id; n.cLast={x:d.x,y:d.y}; n.cSig=b.saw?(d.sig||outfitSig(P)):false; n.busy=null; n.spd=1.15+(hash3(n.id,1,1)%50)/100;
-    if(near)toast(n.name+' FOUND '+nm+(b.saw?' AND SAW WHO DROPPED IT':'  -  STOLEN GOODS'),RED,true);
-    if(law||!V.lawB)reportCrime(V,n,2,'theft',true); else{ startReport(V,n,2,'theft'); n.busy=n.busy||{k:'report',sev:2,kind:'theft'}; }
-    return;
-  }
-  const pRep=clamp(.12+t.ho*.05+(law?.5:0),.05,.85), pTake=clamp((.55-t.ho*.04+((n.job==='none'||n.homeless)?.15:0))*(b.saw?.5:1),.05,.7), r=Math.random();
+  // nothing lying on the ground is a crime: anyone may own almost anything, so it is only ever lost property, found and handed in or kept
+  const pRep=clamp(.12+t.ho*.05+(law?.6:0)+(d.stolen?.1:0),.05,.9), pTake=clamp((.55-t.ho*.04+((n.job==='none'||n.homeless)?.15:0))*(b.saw?.5:1),.05,.7), r=Math.random();
   if(r<pRep){                                                            // lost property: they carry it to the law house
     lift(); const dest=lawDest(V);
     if(dest&&!law&&!(V.lawB&&n.inside===V.lawB.id)){ n.busy={k:'handin',id:d.id,n:d.n}; routeTo(V,n,dest); n.spd=1.6; } else{ handIn(V,n,d.id,d.n); inspectEnd(V,n,null); }
@@ -5915,7 +6272,7 @@ function wFollowTick(w,dt){                                              // trav
   return true;
 }
 function guardBack(V,n){
-  n.hunt=0; n.chase=false; n.warned=0; n.defy=0; n.armed=0; n.aim=0; n.gs=null; n.lost=0; n.sCd=0; n.bt=0; n.pNext=-1; n.slot=-9; n.strayT=0; n.spd=1.15+(hash3(n.id,1,1)%50)/100;
+  n.invest=null; n.hunt=0; n.chase=false; n.warned=0; n.defy=0; n.armed=0; n.aim=0; n.gs=null; n.lost=0; n.sCd=0; n.bt=0; n.pNext=-1; n.slot=-9; n.strayT=0; n.spd=1.15+(hash3(n.id,1,1)%50)/100;
   if(n.inside)return;                                                                  // already in a building: the schedule walks them out
   const blk=curBlk(V,n), d=destForBlk(V,n,blk); n.blk=blk; n.slot=slotId(blk); n.ovr=null; n.tgt=d; n.tgtKeep=false; n.arrB=null;
   if(Math.hypot(n.x-V.cx,n.y-V.cy)>V.L*.85)npcGoTo(V,n,d.x,d.y,1.9,false);             // chased someone out into the country: walk back across open ground
@@ -5926,12 +6283,32 @@ function guardRecog(V,n){
   const P=G.pl; if(!P||n.inside||n.sleeping||n.talk||n.hid)return false;
   if(n.rgT&&T_<n.rgT)return false; n.rgT=T_+.45;
   const sig=outfitSig(P); let best=null;
-  for(const r of recList(V)){ if(r.ty!=='p'||r.st!=='expired'||r.dead||!r.sig)continue; if(G.whrs-(r.end||r.until||0)>36+r.sev*24)continue; if(!sigMatch(r.sig,sig))continue; if(!best||r.sev>best.sev)best=r; }
+  for(const r of recList(V)){ if(r.ty!=='p'||r.st!=='expired'||r.dead||!r.sig)continue; if(G.whrs-(r.end||r.until||0)>36+r.sev*24)continue; if(!recHasSig(r,sig))continue; if(!best||r.sev>best.sev)best=r; }
   if(!best||!npcSees(n,P,sightRange(P)+3))return false;
   const r=best; r.st='active'; r.until=G.whrs+2+r.sev*1.1; r.span=0; r.told=1; r.rec=(r.rec||0)+1; r.seen=G.whrs; r.last={x:P.x,y:P.y}; r.inB=null; V.alert=100;
   tellResp(V,n,r); n.gs='pursuit'; n.seenT=T_;
   for(const g of V.npcs){ if(g===n||!isResp(V,g)||g.inside||g.sleeping||g.hunt)continue; if(Math.hypot(g.x-n.x,g.y-n.y)<10)tellResp(V,g,r); }
   toast('AN OFFICER RECOGNISES YOU  -  THE OLD CASE IS OPEN AGAIN',RED,true); sfx.err(); return true;
+}
+function investTick(V,n,dt){                                           // an officer checks a building near where the suspect was last seen: knock, ask to come in, look around, leave
+  const iv=n.invest, b=G.bmap.get(iv.id); if(!b){ n.invest=null; return false; }
+  const d=doorOf(V,b.id), w=bestRec(V);
+  if(iv.ph==='go'){
+    if(Math.hypot(d.x-n.x,d.y+.6-n.y)<1.2){ iv.ph='knock'; iv.t=T_; n.moving=false; n.st='idle'; n.path=null; n.dir=0; if(!G.in&&Math.hypot(G.pl.x-n.x,G.pl.y-n.y)<24)sfx.knock(); return true; }
+    iv.pt=(iv.pt||0)-dt; if(n.st!=='walk'||iv.pt<=0){ iv.pt=.8; npcGoTo(V,n,d.x,d.y+.6,2.2,true); }
+    iv.to=(iv.to||0)+dt; if(iv.to>25){ n.invest=null; return false; } return true; }
+  if(iv.ph==='knock'){
+    if(T_-iv.t<1.8)return true;
+    if(w)(w.chk||(w.chk=[])).push(b.id);
+    const ins=V.npcs.filter(o=>o!==n&&o.inside===b.id&&!o.sleeping&&!o.hunt&&o.job!=='guard'), hostile=ins.some(o=>o.mem&&o.mem.op<=-30);
+    if(!ins.length||Math.random()<.06+(hostile?.1:0)){ n.invest=null; return false; }                // nobody answers, or one of the very few who will not let the law in
+    if(G.in&&G.in.b.id===b.id){ n.invest=null; guardEnter(G.in,n); return true; }
+    n.inside=b.id; n.st='inside'; n.moving=false; n.path=null; iv.ph='in'; iv.until=T_+7+Math.random()*8; return true; }
+  if(iv.ph==='in'){
+    if(G.in&&G.in.b.id===b.id&&!n._a){ n.invest=null; guardEnter(G.in,n); return true; }               // the suspect is in there with them
+    if(T_<iv.until)return true;
+    n.invest=null; n.inside=null; n.st='idle'; n.x=d.x; n.y=d.y+.6; n.path=null; return false; }
+  n.invest=null; return false;
 }
 function guardAI(V,n,dt){
   if(n.job!=='guard'&&!n.militia)return false;
@@ -5945,6 +6322,7 @@ function guardAI(V,n,dt){
   if(n.busy&&n.busy.k==='dispatch')return false;
   if(!n.hunt&&!n.inside&&!G.in&&matchedRec(V)&&npcSees(n,P,sightRange(P)+5)){ tellResp(V,n,w); n.seenT=T_; }   // an officer who simply sees the suspect joins in
   if(!n.hunt)return false; n.blk=curBlk(V,n);
+  if(n.invest&&investTick(V,n,dt))return 'held';
   if(n.inside&&(!G.in||G.in.b.id!==n.inside)){ n.sleeping=false; const d={x:w.last.x,y:w.last.y,inside:null,k:'search'}; routeTo(V,n,d); n.spd=2.2; n.chase=true; return 'held'; }
   if(n.inside)return 'held';
   const inB=G.in?G.in.b:null, dx=P.x-n.x, dy=P.y-n.y, dist=Math.hypot(dx,dy);
@@ -5965,6 +6343,7 @@ function guardAI(V,n,dt){
   }
   // not in sight: go where he was last seen, then search around
   n.lost=(n.lost||0)+dt; n.warned=n.lost>6?0:n.warned;
+  if(!n.invest&&n.id%2===0&&n.lost>4&&w.last&&Math.random()<dt*.08){ const cand=V.B.filter(b=>ENT.has(BT[b.t].k)&&b.t!=='watchhouse'&&!(w.chk&&w.chk.includes(b.id))&&Math.hypot(b.x-w.last.x,b.y-w.last.y)<32).sort((a,c)=>Math.hypot(a.x-n.x,a.y-n.y)-Math.hypot(c.x-n.x,c.y-n.y))[0]; if(cand){ n.invest={id:cand.id,ph:'go',pt:0}; n.gs='search'; return 'held'; } }
   if(n.lost>55+(n.id%7)*9+w.sev*14){ guardBack(V,n); return false; }   // searched long enough: back to work
   if(n.st!=='walk'||n.pi>=(n.path||[]).length){
     const d=Math.hypot(w.last.x-n.x,w.last.y-n.y);
@@ -6163,7 +6542,7 @@ function mkRec(V,o){
   const L2=recList(V); L2.push(r); if(L2.length>80){ const i=L2.findIndex(q=>q.st!=='active'); if(i>=0)L2.splice(i,1); } return r;
 }
 function npcRec(V,n,out){ const s=vst(V), id=(s.rid=(s.rid||0)+1), L2=recList(V); L2.push({id,ty:'n',at:G.whrs,kind:'THEFT',name:n.name+' '+n.last,age:n.age,job:n.job,fem:n.g===1?1:0,hair:n.look&&n.look.hair,place:'IN '+V.name,out:out||'CAUGHT AND WARNED',st:'closed',by:'THE TOWN WATCH'}); if(L2.length>80){ const i=L2.findIndex(q=>q.st!=='active'); if(i>=0)L2.splice(i,1); } }
-const kindWord=k=>k==='murder'?'MURDER':k==='assault'?'ASSAULT':k==='body'?'A BODY FOUND, SUSPECT UNKNOWN':k==='breakin'?'BREAKING INTO A HOME':k==='theft'?'THEFT':k==='loot'?'ROBBERY':'DISTURBING THE PEACE';
+const kindWord=k=>k==='murder'?'MURDER':k==='assault'?'ASSAULT':k==='body'?'A BODY FOUND, SUSPECT UNKNOWN':k==='breakin'?'BREAKING INTO A HOME':k==='theft'?'THEFT':k==='loot'?'ROBBERY':k==='bank'?'BANK ROBBERY':'DISTURBING THE PEACE';
 function recStatus(r){ return r.st==='custody'?'IN CUSTODY, AWAITING COURT':r.ty==='n'?r.out:r.st==='active'&&r.until>G.whrs?'STILL WANTED':r.st==='surrendered'?'SURRENDERED, CASE CLOSED':'COLD  -  THE LAW STOOD DOWN'; }
 function recLabel(r,i){ return '#'+(i+1)+'  '+(r.ty==='n'?'THIEF '+r.name.split(' ')[0]:kindWord(r.kind).slice(0,14))+'  '+recWhen(r.at).replace('DAY ','D')+(r.ty==='p'&&r.st==='active'&&r.until>G.whrs?'  *':''); }
 function recDetail(r,seg){
@@ -6176,7 +6555,7 @@ function wantedKnownAll(V){ const o={c:0,i:0,s:0}; for(const r of activeRecs(V))
 function wantedKnown(V,w){                                           // what the law still knows about the player right now
   const P=G.pl; if(!P||!w)return {c:0,i:0,s:0};
   const pp=(G.in&&G.in.b)?doorOf(V,G.in.b.id):{x:P.x,y:P.y}, h=heldId();
-  return {c:sigMatch(w.sig,outfitSig(P))?1:0, i:(w.item&&h===w.item)?1:0, s:(w.scene&&Math.hypot(pp.x-w.scene.x,pp.y-w.scene.y)<22)?1:0};
+  return {c:recHasSig(w,outfitSig(P))?1:0, i:(w.item&&h===w.item)?1:0, s:(w.scene&&Math.hypot(pp.x-w.scene.x,pp.y-w.scene.y)<22)?1:0};
 }
 function drawWantedIcons(V,w){
   const k=wantedKnownAll(V), ic=[]; if(k.c)ic.push('c'); if(k.c&&k.i)ic.push('i'); if(k.s)ic.push('s'); if(!ic.length)return;
@@ -6212,7 +6591,7 @@ function drawWantedStatus(V,w){
   w.span=Math.max(w.span||0,w.until-G.whrs); if(!st[2]){ const f=clamp((w.until-G.whrs)/(w.span||1),0,1), cw=bw-10; F(x+5,24,cw,2,'#26251f'); F(x+5,24,Math.round(cw*f),2,st[1]); }   // cool-down while they have lost you
 }
 function lifeVillage(V,dt){
-  dropScan(V,dt);
+  dropScan(V,dt); for(const n of V.npcs)if(n.shopping)shopTick(V,n);
   V.lkT=(V.lkT||0)-dt; if(V.lkT<=0){ V.lkT=.5; lockTick(V); }
   const s=vst(V), idle=!V.npcs.some(g=>g.hunt||(g.busy&&['report','report2','tell','dispatch'].includes(g.busy.k)));
   for(const r of recList(V)){ if(r.ty!=='p'||r.st!=='active')continue; if(r.told&&idle)r.until=Math.min(r.until,G.whrs); if(r.until<=G.whrs){ r.st='expired'; r.end=G.whrs; } }
@@ -6245,6 +6624,9 @@ function placeHouseActor(IN,n,usedSeat,usedBed){
 function spawnArrival(IN,n){
   const Rm=IN.R, V=IN.V;
   if(IN.house&&BT[IN.b.t].k==='house'){ const a=mkActor(IN,n,Rm.door,Rm.h-.4,'wander',{sid:''}); noticeSoon(IN,a,.6); return a; }
+  if(!IN.house&&n.work===IN.b.id&&Rm.keep.length){ const blk=curBlk(V,n);                                  // a worker arriving for the shift walks round the counter to their post
+    if(blk.k==='work'){ let ks=null; for(const k of Rm.keep){ if(!IN.actors.some(x=>x.ks===k||(x.mode==='keeper'&&Math.hypot(x.x-k.x,x.y-k.y)<.6))){ ks=k; break; } }
+      if(ks){ const route=(Rm.gate?[[Rm.door,Rm.gate[0][1]]].concat(Rm.gate.map(p=>p.slice())):[]).concat([[ks.x,ks.y]]); return mkActor(IN,n,Rm.door,Rm.h-.4,'wander',{route,ks,sid:slotId(blk),role:n.job==='clerk'?'clerk':n.job==='doctor'?'doctor':n.job==='librarian'?'librarian':'keeper'}); } } }
   const s=Rm.spots[Math.floor(Math.random()*Rm.spots.length)]||[Rm.w/2,Rm.h/2]; return mkActor(IN,n,Rm.door,Rm.h-.4,'wander',{go:s,sid:slotId(curBlk(V,n))});
 }
 function intLife(IN,dt){
@@ -6418,10 +6800,17 @@ function actUpdate(a,dt,IN){
     if(dp<=.95&&a.atkCd<=0){ if(a.arrest&&!(G.lethal&&G.lethal.V===IN.V)){ arrestPlayer(IN.V,n,true); } else{ hitPlayer(a,IN); a.atkCd=1.15+Math.random()*.7; } }
     return;
   }
+  if(a.leave&&a.beh&&Rm.gate&&!a.xr)a.xr=Rm.gate.slice().reverse().map(p=>p.slice());          // behind the counter: out through the gap first
+  if(a.leave&&a.xr){ const t=a.xr[0], done=t?actMoveTo(a,IN,t[0],t[1],a.alarm?WALK*.95:(a.spd||.6)+.5,dt):true;
+    if(done||(t&&Math.hypot(t[0]-a.x,t[1]-a.y)<.2)){ a.xr.shift(); a.stuck=0; } else if(a.stuck>2.5){ a.xr=null; a.beh=0; return; }
+    if(!a.xr.length){ a.xr=null; a.beh=0; } return; }
   if(a.leave){ const via=a.via, tx=via?via[0]:Rm.door, ty=via?via[1]:Rm.h-.1, done=actMoveTo(a,IN,tx,ty,a.alarm?WALK*.95:a.spd+.5,dt);
     if(via&&(done||Math.hypot(a.x-via[0],a.y-via[1])<.2)){ a.via=null; a.stuck=0; }
     else if(a.stuck>.6){ if(!via){ for(let i=0;i<14;i++){ const sp=Rm.spots[Math.floor(Math.random()*Rm.spots.length)]; if(sp&&clearLine(Rm,a.x,a.y,sp[0],sp[1])&&Math.hypot(sp[0]-a.x,sp[1]-a.y)>.8){ a.via=sp; a.stuck=0; break; } } } else if(a.stuck>2.5){ a.via=null; a.stuck=0; if(a.alarm){ unseat(IN,a); } else{ a.wait=1.2; a.leave=0; } } }   // walk around whatever is in the way, never snap to the door
     if(!via&&(done||a.y>Rm.h-.2||Math.hypot(a.x-Rm.door,a.y-Rm.h)<.35))actorExit(a,IN); return; }
+  if(a.route&&a.route.length){ const t=a.route[0], done=actMoveTo(a,IN,t[0],t[1],(a.spd||.6)+.3,dt);
+    if(done||Math.hypot(t[0]-a.x,t[1]-a.y)<.18){ a.route.shift(); a.stuck=0; } else if(a.stuck>2.5){ a.route=null; a.ks=null; a.wait=1; return; }
+    if(!a.route.length){ a.route=null; if(a.ks){ a.mode='keeper'; a.face=a.ks.face; a.x=a.ks.x; a.y=a.ks.y; a.dir=a.face; a.moving=false; a.beh=Rm.gate?1:0; } } return; }
   if(a.seatTo){ const done=actMoveTo(a,IN,a.seatTo.x,a.seatTo.y,a.spd||WALK*.6,dt); if(done||Math.hypot(a.seatTo.x-a.x,a.seatTo.y-a.y)<.14){ a.mode='sit'; a.face=a.seatTo.f; a.x=a.seatTo.x; a.y=a.seatTo.y; a.dir=a.face; a.seatTo=null; a.moving=false; } else if(a.stuck>2){ a.seatTo=null; a.wait=1; } return; }
   if(a.mode==='keeper'){ a.moving=false; a.dir=dp<5.5?dirFrom(dxp,dyp):a.face; return; }
   if(a.mode==='sit'){ a.moving=false; if(dp<2.6||a.rx==='ask'||a.rx==='shout')a.dir=dirFrom(dxp,dyp); else a.dir=a.face; return; }
@@ -6480,7 +6869,7 @@ function upToLine(n,V){
   if(blk.k==='sleep'&&!n.homeless){   // the answer comes from their own day: usual bedtime, wake-up and start of work
     const sl=(n.sch||[]).filter(b=>b.k==='sleep'), bedT=sl.length&&sl[sl.length-1].s>=12?sl[sl.length-1].s:null, wakeT=sl.length&&sl[0].s===0?sl[0].e:null, wk=(n.sch||[]).find(b=>b.k==='work'||b.k==='wfh');
     if(bedT&&wakeT)s+=' I USUALLY TURN IN AT '+hmStr(bedT)+' AND GET UP AT '+hmStr(wakeT)+'.'; if(wk)s+=' MY WORK STARTS AT '+hmStr(wk.s)+'.'; }
-  if(blk.k==='errand')s+=' WE ARE RUNNING LOW ON FOOD AT HOME.';
+  if(blk.k==='errand'&&!blk.bank)s+=' WE ARE RUNNING LOW ON FOOD AT HOME.';
   else if(n.hungry)s+=' AND I AM HUNGRY - THERE IS NOTHING AT HOME.';
   else if(n.food<30)s+=' I COULD REALLY EAT SOMETHING.';
   const nb=n.sch&&n.sch[blk.i+1]; if(nb&&nb.k!=='sleep')s+=' LATER I AM '+doingFor(V,n,nb)+'.';
@@ -6644,7 +7033,7 @@ function drawNpc(n){
   if(n.inside||n.hid)return; const z=cam.z, sp=playerSprite(n), sx=w2sx(n.x*TS), sy=w2sy(n.y*TS);
   if(n.sleeping){ drawSleepPose(sx,sy,z,n,false); return; }
   X.fillStyle='rgba(0,0,0,.28)'; X.fillRect(sx-4*z,sy-z,8*z,z); X.fillRect(sx-3*z,sy-2*z,6*z,z); X.fillRect(sx-3*z,sy,6*z,z);
-  X.drawImage(sp.cv,sx-PCX*z,sy-PCY*z,PCW*z,PCH*z); waterFx(n,sx,sy,z);
+  if(n.sitB&&n.st!=='walk'&&!n.moving)drawSeated(n,sx,sy,z); else X.drawImage(sp.cv,sx-PCX*z,sy-PCY*z,PCW*z,PCH*z); waterFx(n,sx,sy,z);
   if(n.bf>.12){ X.fillStyle='rgba(140,14,14,'+Math.min(.9,.3+n.bf*.65)+')'; X.fillRect(sx-3*z,sy-2*z,2*z,2*z); X.fillRect(sx+1*z,sy-2*z,2*z,2*z); }
 }
 
@@ -6721,7 +7110,7 @@ function talkOptions(){
   opts.push({label:'WHERE CAN I FIND...?',fn:()=>{ if(hostile){ talkSay('FIGURE IT OUT YOURSELF.'); return; } t.menu='where'; t.places=placesList(V,n); talkSay('LOOKING FOR SOMEONE OR SOMETHING?'); }});
   if(n.mem.cl)opts.push({label:'ABOUT THE OTHER DAY...',fn:()=>talkSay(pickS(CL_TALK[n.mem.cl-1],Math.random()))});
   if(!hostile)opts.push(n.follow?{label:'THANKS, YOU CAN GO NOW',fn:()=>{ followEnd(V,n); talkSay(pickR(['ANYTIME.','GLAD TO HELP. BACK TO IT, THEN.'])); G.talk.bye=1.4; }}:{label:'WILL YOU COME WITH ME?',fn:()=>askFollow(n,V)});
-  { const shopRob=!!(G.in&&n._a&&(n._a.mode==='keeper'||n._a.role)&&G.in.R&&G.in.R.sp); opts.push({label:shopRob?'ROB THE SHOP':(n.job==='guard'||n.militia)?'ROB THE OFFICER':'ROB THEM',fn:()=>robNpc(n,V)}); }
+  { const shopRob=!!(G.in&&n._a&&(n._a.mode==='keeper'||n._a.role)&&G.in.R&&G.in.R.sp); opts.push({label:shopRob?(G.in.b.t==='bank'?'ROB THE BANK':'ROB THE SHOP'):(n.job==='guard'||n.militia)?'ROB THE OFFICER':'ROB THEM',fn:()=>robNpc(n,V)}); }
   opts.push({label:'GOODBYE',fn:()=>{ talkSay(n.mem.op>=10?'SAFE TRAVELS, FRIEND.':'MIND YOURSELF.'); G.talk.bye=1.1; }});
   return opts;
 }
@@ -6899,7 +7288,7 @@ function playerSprite(P){
 }
 function tileBlocked(tx,ty){
   if(clsAt(tx,ty)===0)return true;                                 // deep water
-  const id=G.occ.get(tk(tx,ty)); if(id){ const b=bById(id); if(b&&!BT[b.t].walk)return true; }
+  const id=G.occ.get(tk(tx,ty)); if(id){ const b=bById(id); if(b&&b.t==='bench')return false; if(b&&!BT[b.t].walk)return true; }          // a bench blocks only where it is drawn, see hitsBody
   return false;
 }
 function npcBodyAt(x,y){
@@ -6914,6 +7303,7 @@ function hitsBody(x,y){
   const x0=Math.floor(x-PBX), x1=Math.floor(x+PBX), y0=Math.floor(y-PBY), y1=Math.floor(y+PBY);
   for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){
     if(tileBlocked(tx,ty))return true;
+    { const ob=G.occ.get(tk(tx,ty)); if(ob){ const bb=bById(ob); if(bb&&bb.t==='bench'&&x+PBX>tx+.04&&x-PBX<tx+.96&&y+PBY>ty+.55&&y-PBY<ty+.96)return true; } }
     if(G.camps)for(const cp of G.camps){ if(Math.abs(cp.x-tx)<=1&&Math.abs(cp.y-ty)<=1&&x+PBX>cp.x+.22&&x-PBX<cp.x+.78&&y+PBY>cp.y+.3&&y-PBY<cp.y+.85)return true; }
     const n=nodeAt(tx,ty);
     if(n&&n.t!==5&&n.t!==8&&n.t!==9){
@@ -6930,6 +7320,7 @@ function updatePlayer(dt){
   if(!frozen){
     if(held('left')||KEYS_.ArrowLeft)ix-=1; if(held('right')||KEYS_.ArrowRight)ix+=1; if(held('up')||KEYS_.ArrowUp)iy-=1; if(held('down')||KEYS_.ArrowDown)iy+=1;
   }
+  if(P.sitB){ if(ix||iy)benchStand(); else{ ix=0; iy=0; P.dir=0; } }
   if(P.swing>0){ ix=0; iy=0; }
   const want=!!(ix||iy), d8=STEPDIRS[ix+','+iy], len=Math.hypot(ix,iy)||1; if(want){ P.dir=d8; if(G.fish)G.fish=null; }
   const nx0=ix/len, ny0=iy/len;
@@ -6970,6 +7361,11 @@ function drawSleepPose(sx,sy,z,P,inside){      // lying on the back: bedroll and
   for(let k=0;k<3;k++){ const ph=((T_*.45+k/3)%1), q=Math.max(1,R((1+ph*1.3)*z)), zx=R(sx-12*z-ph*5*z), zy=R(sy-13*z-ph*13*z); X.globalAlpha=(1-ph)*.9; X.fillStyle='#dfe6f5'; X.fillRect(zx,zy,3*q,q); X.fillRect(zx+q*2-q,zy+q,q,q); X.fillRect(zx,zy+2*q,3*q,q); }
   X.globalAlpha=1;
 }
+function drawSeated(who,sx,sy,z){                                    // sat down: the same sprite with three rows of leg taken out, so the legs are short and end in the shoes (outline and hands kept)
+  const sp=playerSprite({dir:0,moving:false,ph:0,idleT:who.idleT||0,look:who.look}), top=sy-PCY*z;
+  X.drawImage(sp.cv,0,0,PCW,23,sx-PCX*z,top+3*z,PCW*z,23*z);
+  X.drawImage(sp.cv,0,26,PCW,PCH-26,sx-PCX*z,top+26*z,PCW*z,(PCH-26)*z);
+}
 function drawPlayer(P){
   if(G.sleep){ drawSleepPose(w2sx(P.x*TS),w2sy(P.y*TS),cam.z,P,false); return; }
   const z=cam.z, sp=playerSprite(P), sx=w2sx(P.x*TS), sy=w2sy(P.y*TS);
@@ -6977,7 +7373,7 @@ function drawPlayer(P){
   let ox=0,oy=0; if(P.swing>0){ const k=axePose(P), v=DIRVEC[P.dir]; ox=Math.round(v[0]*k.lean*.8*z); oy=Math.round(v[1]*k.lean*.5*z+(k.p>.46&&k.p<.72?z*.7:0)); }
   if(P.carry){ const cb=(G.bodies||[]).find(x=>x.id===P.carry), lf=cb&&cb.lift!==undefined?cb.lift:1; oy+=Math.round(z*(1+(1-lf)*2.5)); }       // bending under the weight, deeper while lifting
   if(P.swing>0)drawAxeSwing(P,sx,sy,true);
-  X.drawImage(sp.cv,sx-PCX*z+ox,sy-PCY*z+oy,PCW*z,PCH*z);
+  if(P.sitB)drawSeated(P,sx,sy,z); else X.drawImage(sp.cv,sx-PCX*z+ox,sy-PCY*z+oy,PCW*z,PCH*z);
   if(P.swing>0)drawAxeSwing(P,sx+ox,sy+oy,false);
   if(P.bf>.12){ X.fillStyle='rgba(140,14,14,'+Math.min(.9,.3+P.bf*.65)+')'; X.fillRect(sx-3*z,sy-2*z,2*z,2*z); X.fillRect(sx+1*z,sy-2*z,2*z,2*z); }
   if(P.wade){ X.fillStyle='rgba(70,160,190,.55)'; X.fillRect(sx-5*z,sy-3*z,10*z,3*z); X.fillStyle='rgba(225,245,248,.7)'; const w=Math.floor(T_*5)%2; X.fillRect(sx-(5+w)*z,sy-3*z,(10+w*2)*z,z); }
@@ -7049,7 +7445,7 @@ const fmtM=c=>{ c=Math.round(c); const neg=c<0; c=Math.abs(c); return (neg?'-':'
   I('brooch','BROOCH','A RED STONE SET IN GOLD.'); ic('brooch','BROOCH',{r:'#a81c2c',R:'#e84a5a',h:'#ffd0d0',g:'#a8802a',G:'#e8c860'});
   for(const k of ['ale','coffee','sugar','candle','soap','lantern','pocketwatch','silverring','locket','brooch'])ICV.delete(k);
 })();
-const VALB={branch:2,stone:2,flint:6,fiber:2,clay:4,salt:8,log:12,bark:3,resin:10,pinenut:5,acorn:2,hazelnut:6,chestnut:6,walnut:8,apple:6,coconut:14,berries:5,blue:7,elder:8,herb:4,mint:5,chamomile:6,
+const VALB={coins:100,goldbar:20000,branch:2,stone:2,flint:6,fiber:2,clay:4,salt:8,log:12,bark:3,resin:10,pinenut:5,acorn:2,hazelnut:6,chestnut:6,walnut:8,apple:6,coconut:14,berries:5,blue:7,elder:8,herb:4,mint:5,chamomile:6,
   frose:5,fyellow:5,fwhite:5,fblue:5,fpink:6,fmarigold:5,lavender:6,sunflower:6,onion:4,garlic:5,carrot:4,potato:4,turnip:4,beet:5,cabbage:6,pumpkin:12,corn:5,wheat:3,nettle:3,cress:4,dandelion:3,
   thyme:5,sage:5,rosemary:5,cattail:4,egg:5,honeycomb:28,mushroom:7,cactusfruit:6,rawmeat:30,trout:25,perch:20,carp:22,salmon:45,catfish:32,mackerel:28,cod:30,palmfrond:4,cactuspulp:5,spine:2,gum:9,straw:2,
   sugar:12,candle:8,soap:15,ale:12,coffee:14,pocketwatch:600,silverring:450,locket:380,brooch:300,flour:7,honey:18,cider:14,cord:6,bandage:14};
@@ -7080,6 +7476,7 @@ const SHOPS={
   tailor:{n:'TAILOR',style:'tailor',sells:['bandage','cord','rope','basket','soap'],buys:['fib']},
   cobbler:{n:'COBBLER',style:'general',sells:['rope','cord','glue','resin','bark'],buys:['wood','fib']},
   apothecary:{n:'APOTHECARY',style:'herbs',sells:['bandage','salve','tonic','poultice','mint','chamomile','lavender','herb','honey','sagetea','chamtea','calmtea','soap','candle'],buys:['herb','farm']},
+  bank:{n:'BANK',style:'jewel',sells:[],buys:[]},
   jeweler:{n:'JEWELER',style:'jewel',sells:['pocketwatch','silverring','locket','brooch'],buys:[]},
   chandler:{n:'CHANDLER',style:'candles',sells:['candle','lantern','torch','honeycomb','resin','soap'],buys:['farm','wood']},
   bakery:{n:'BAKERY',style:'bakery',sells:['flour','dough','bread','herbbread','garlicflat','pancakes','cornbread','pie_apple','berrytart','honeycake','flatbread','jam','honey','egg','sugar','salt'],buys:['farm','fruit','nut']},
@@ -7104,7 +7501,7 @@ const SHOPS={
 SHOPS.butcher.sells.push('sausage','meatballs','tallow'); SHOPS.chandler.sells.push('beeswax','tallow','claylamp'); SHOPS.apothecary.sells.push('elixir','thymesyrup','dandeltea','rosetea','beeswax');
 SHOPS.bakery.sells.push('sweetbun','candiedapple','nutbrittle'); SHOPS.tavern.sells.push('berryjuice','mashpotato','cornchowder','honeycustard','sausage'); SHOPS.inn.sells.push('mashpotato','cornchowder','boiledegg');
 SHOPS.fishhut.sells.push('saltcod','friedcatfish','nuttrout'); SHOPS.grocer.sells.push('boiledegg','pickledbeet','applesauce','berryjuice'); SHOPS.market.sells.push('berryjuice','applesauce');
-const HOURS={bakery:[5,16],market:[7,17],fishmarket:[7,17],tavern:[11,24.5],inn:[0,24],smithy:[7,18],clinic:[8,17],church:[6,20],chapel:[6,20],school:[8,15],library:[9,18],hall:[9,17],hall2:[9,17],house:[0,24],watchhouse:[0,24]};
+const HOURS={bank:[9,16],bakery:[5,16],market:[7,17],fishmarket:[7,17],tavern:[11,24.5],inn:[0,24],smithy:[7,18],clinic:[8,17],church:[6,20],chapel:[6,20],school:[8,15],library:[9,18],hall:[9,17],hall2:[9,17],house:[0,24],watchhouse:[0,24]};
 const shopOf=b=>{ const d=BT[b.t]; return SHOPS[b.t]||SHOPS[d.k]||null; };
 function hoursOf(b){ const d=BT[b.t]; return HOURS[b.t]||HOURS[d.k]||[8,18]; }
 function keepersOf(b){ const V=G.vil.get(b.vid); if(!V)return []; return V.npcs.filter(n=>n.work===b.id); }
@@ -7328,7 +7725,7 @@ RBUILD.house=(A,Rm,rn,b,d)=>{
           let hit=false; for(const it of sol){ if(bx<it.x+it.w+.05&&bx+bw>it.x-.05&&by<it.y+it.h+.05&&by+bh>it.y-.05){ hit=true; break; } }
           if(!hit)out.push([bx,by]); }
       return out; };
-    const sizes=want<=2?[[2,3],[1.4,3],[1.3,2.2]]:want<=4?[[1.4,3],[1.3,2.2]]:[[1.3,2.2]];
+    const sizes=want<=2?[[2.3,3],[2,3],[1.7,2.6]]:want<=4?[[2,3],[1.7,2.6],[1.55,2.4]]:[[1.7,2.6],[1.55,2.3]];
     let lay=[], sz=sizes[0]; for(const z of sizes){ lay=tryLay(z[0],z[1]); sz=z; if(lay.length>=want)break; }
     for(const [bx,by] of lay){ const bd=A.add('bed',bx,by,sz[0],sz[1],{bl:A.pk(BLANKETS),free:true}); if(bd)Rm.beds.push(bd); } }
   if(Rm.beds.length<1){ const bd=A.add('bed',w-2.3,.35,2,3,{bl:A.pk(BLANKETS)}); if(bd)Rm.beds.push(bd); }
@@ -7336,7 +7733,7 @@ RBUILD.house=(A,Rm,rn,b,d)=>{
 function shopCore(A,Rm,b,d,wd,hd){ // counter row with shelves behind and an aisle in front
   const sp=Rm.sp, w=Rm.w=(b.w>=3?11:10)+(wd||0), h=Rm.h=hd||7; Rm.door=Math.floor(w/2)+.5; Rm.floor=Rm.floor||'wood';
   A.win(2.1); A.win(w-3.1); A.add('shelf',.5,0,3,1,{ids:A.ids(6)}); A.add('shelf',w-3.5,0,3,1,{ids:A.ids(6)});
-  A.add('counter',.4,3.1,w-.8,1,{stuff:[{t:'scale',x:20,y:5},{t:'coins',x:58,y:6},{t:'book',x:90,y:6,c:'#3a4a7a'},{t:'jar',x:(w-.8)*16-24,y:6}]});
+  A.add('counter',.4,3.1,w-2.3,1,{stuff:[{t:'scale',x:20,y:5},{t:'coins',x:58,y:6},{t:'book',x:90,y:6,c:'#3a4a7a'},{t:'jar',x:(w-2.3)*16-24,y:6}]}); Rm.gate=[[w-1.15,4.45],[w-1.15,2.3]];          // a gap at the end of the counter, so staff can walk behind it
   A.keep(w/2,2.15,0,'keeper'); A.light(w/2,1.8,110,.85,'lamp');
   A.add('lamp',w/2-.5,.15,1,1,{}); A.pic(w/2+.6,0x8a7a3a);
 }
@@ -7374,7 +7771,7 @@ RBUILD.tavern=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp||SHOPS.tavern; Rm.sp=sp; const w=Rm.w=14, h=Rm.h=9; Rm.floor='wood'; Rm.fc=0x8a5a34; Rm.door=7.5; Rm.wt=b.tx===0?1:b.tx;
   A.win(2.2); A.win(5.4); A.win(w-2.6);
   A.add('hearth',.5,0,3,1); A.light(2,1.3,90,1,'fire');
-  A.add('bar',5.4,2.4,7,1,{stuff:[{t:'mug',x:12,y:6},{t:'mug',x:26,y:6},{t:'bottle',x:44,y:6},{t:'mug',x:70,y:6},{t:'coins',x:90,y:6}]}); A.keep(8.9,1.5,0,'keeper');
+  Rm.gate=[[4.8,3.8],[4.8,1.5]]; A.add('bar',5.4,2.4,7,1,{stuff:[{t:'mug',x:12,y:6},{t:'mug',x:26,y:6},{t:'bottle',x:44,y:6},{t:'mug',x:70,y:6},{t:'coins',x:90,y:6}]}); A.keep(8.9,1.5,0,'keeper');
   A.add('shelf',6.2,0,2,1,{ids:['ale','cider','coffee','mintea']}); A.add('keg',9,.2,1,1,{}); A.add('keg',10,.2,1,1,{}); A.add('keg',11,.3,1,1,{}); A.add('cabinet',12,0,2,1,{});
   A.light(8.9,1.7,120,.9,'lamp');
   const spots=[[1.1,3.8],[5,5.5],[9.3,5.4],[1.1,6.7],[5.2,7.1]]; for(const [x,y] of spots){ if(y>h-1.9)continue; A.tableSet(x,y,2,2,[{t:'mug',x:7,y:6},{t:'plate',x:24,y:6}]); }
@@ -7384,7 +7781,7 @@ RBUILD.tavern=(A,Rm,rn,b,d)=>{
 RBUILD.inn=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp||SHOPS.inn; Rm.sp=sp; const w=Rm.w=14, h=Rm.h=9; Rm.floor='wood'; Rm.fc=0x9a6a3a; Rm.door=3.5; A.win(3.6); A.win(8); A.win(w-2.6);
   A.add('hearth',w-3.7,0,3,1); A.light(w-2.2,1.3,90,1,'fire');
-  A.add('counter',.5,2.3,5,1,{stuff:[{t:'book',x:12,y:6,c:'#7a3a2a'},{t:'candle',x:36,y:6},{t:'coins',x:60,y:6}]}); A.keep(2.9,1.5,0,'keeper'); A.add('cabinet',.6,0,2,1,{}); A.add('shelf',3,0,2,1,{ids:['ale','coffee','bread','stew']}); A.light(2.9,1.7,100,.8,'lamp');
+  Rm.gate=[[6.1,3.7],[6.1,1.6]]; A.add('counter',.5,2.3,5,1,{stuff:[{t:'book',x:12,y:6,c:'#7a3a2a'},{t:'candle',x:36,y:6},{t:'coins',x:60,y:6}]}); A.keep(2.9,1.5,0,'keeper'); A.add('cabinet',.6,0,2,1,{}); A.add('shelf',3,0,2,1,{ids:['ale','coffee','bread','stew']}); A.light(2.9,1.7,100,.8,'lamp');
   for(let i=0;i<3;i++){ const bd=A.add('bed',6+i*2.7,.2,2,3,{bl:A.pk(BLANKETS)}); if(bd)Rm.beds.push(bd); }
   A.add('chest',6.1,3.6,1,1,{loot:true}); A.add('chest',8.8,3.6,1,1,{loot:true}); A.add('chest',11.5,3.6,1,1,{loot:true});
   A.tableSet(7,5.9,2,2,[{t:'mug',x:7,y:6},{t:'plate',x:24,y:6}]); A.tableSet(11,5.9,2,2,[{t:'plate',x:9,y:6},{t:'candle',x:24,y:6}]); A.add('rug',6.6,4.6,6,1.6,{col:0x3a4a6a,flat:true,free:true}); A.add('plant',.6,h-2.3,1,1,{}); A.add('barrel',w-1.4,2.3,1,1,{}); A.pic(5.5);
@@ -7394,13 +7791,13 @@ RBUILD.smithy=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp||SHOPS.smithy; Rm.sp=sp; Rm.floor='stone'; Rm.fc=0x6a6862; Rm.wt=3; const w=Rm.w=11, h=Rm.h=8; Rm.door=Math.floor(w/2)+.5; A.win(w-2.6);
   A.add('forge',.6,0,3,1,{}); A.light(2.1,1.4,100,1,'fire'); A.add('anvil',4.2,1.7,1,1,{}); A.add('barrel',.5,2.3,1,1,{}); A.add('workbench',4.5,0,2,1,{});
   A.add('toolrack',w-3.5,0,3,1,{ids:['axe','knife','spear','rod','firestarter']}); A.hooks(7,3,'tools');
-  A.add('counter',5.8,3.3,w-6.3,1,{stuff:[{t:'coins',x:14,y:6},{t:'book',x:30,y:6,c:'#3a3a3a'}]}); A.keep(8.4,2.3,0,'keeper'); A.light(8.3,2.2,100,.8,'lamp');
+  Rm.gate=[[5.4,4.6],[5.4,2.3]]; A.add('counter',5.8,3.3,w-6.3,1,{stuff:[{t:'coins',x:14,y:6},{t:'book',x:30,y:6,c:'#3a3a3a'}]}); A.keep(8.4,2.3,0,'keeper'); A.light(8.3,2.2,100,.8,'lamp');
   A.add('crate',1.2,5.3,1,1,{prod:[0x6a6a72]}); A.add('barrel',2.2,5.3,1,1,{}); A.add('logs',.5,6.3,2,1,{}); A.add('sack',w-1.9,5.4,1,1,{sc:0x4a4a52});
 };
 function workshopLike(A,Rm,b,d){
   const sp=Rm.sp=Rm.sp||SHOPS[b.t]||SHOPS.workshop, st=sp.style, w=Rm.w=12, h=Rm.h=8; Rm.door=Math.floor(w/2)+.5; Rm.floor=st==='stone'||st==='pottery'?'stone':'wood'; Rm.fc=0x9a8a70; A.win(2.2); A.win(w-3);
   A.add('shelf',.6,0,3,1,{ids:A.ids(6)}); A.add('shelf',w-3.6,0,3,1,{ids:A.ids(6)});
-  A.add('counter',.5,3.3,5.5,1,{stuff:[{t:'coins',x:14,y:6},{t:'book',x:34,y:6,c:'#3a4a7a'}]}); A.keep(3.2,2.3,0,'keeper'); A.light(3.2,2.2,100,.8,'lamp');
+  Rm.gate=[[6.6,4.6],[6.6,2.3]]; A.add('counter',.5,3.3,5.5,1,{stuff:[{t:'coins',x:14,y:6},{t:'book',x:34,y:6,c:'#3a4a7a'}]}); A.keep(3.2,2.3,0,'keeper'); A.light(3.2,2.2,100,.8,'lamp');
   if(st==='pottery'){ A.add('kiln',w-3.4,1.2,2,2,{}); A.light(w-2.4,2.6,90,.9,'fire'); A.add('wheel',6.8,2,1,1,{}); A.add('pot',7.9,2.1,1,1,{}); A.add('crate',9,.8,1,1,{prod:[0xb8683a]}); }
   else if(st==='stone'){ A.add('crate',6.8,1,1,1,{prod:[0x8c8a84,0xa8a69e]}); A.add('crate',7.8,1,1,1,{prod:[0x8c8a84]}); A.add('planks',w-3.4,1.2,2,1,{col:0x9c9b95}); }
   else{ A.add('sawbench',6.5,1.5,3,1,{}); A.add('logs',w-3.2,1.2,2,1,{}); A.add('planks',9.5,2.7,2,1,{}); }
@@ -7424,7 +7821,7 @@ RBUILD.chapel=(A,Rm,rn,b,d)=>{
 RBUILD.library=(A,Rm,rn,b,d)=>{
   const w=Rm.w=13, h=Rm.h=9; Rm.floor='wood'; Rm.fc=0x8a6a44; Rm.door=6.5; A.win(w/2-.4);
   for(let i=0;i<5;i++)A.add('bookcase',.5+i*2.4,0,2,1,{});
-  A.add('counter',8.6,3.1,4.2,1,{stuff:[{t:'book',x:8,y:6,c:'#2a4a7a'},{t:'book',x:20,y:6,c:'#7a2a2a'},{t:'candle',x:50,y:6}]}); A.keep(10.7,2.2,0,'librarian'); A.light(10.7,2,100,.8,'lamp');
+  Rm.gate=[[7.9,4.5],[7.9,2.2]]; A.add('counter',8.6,3.1,4.2,1,{stuff:[{t:'book',x:8,y:6,c:'#2a4a7a'},{t:'book',x:20,y:6,c:'#7a2a2a'},{t:'candle',x:50,y:6}]}); A.keep(10.7,2.2,0,'librarian'); A.light(10.7,2,100,.8,'lamp');
   A.tableSet(1.2,4,3,3,[{t:'book',x:10,y:5,c:'#7a3a2a'},{t:'candle',x:24,y:6},{t:'book',x:40,y:6,c:'#2a5a3a'}]); A.tableSet(5.4,5.6,3,3,[{t:'book',x:10,y:5,c:'#2a4a7a'},{t:'candle',x:30,y:6}]);
   A.add('globe',.7,6.2,1,1,{}); A.add('bookcase',w-2.6,h-1.9,2,1,{free:true}); A.add('plant',9.4,h-2,1,1,{}); A.add('rug',1.2,6.8,3,1.6,{col:0x3a5a4a,flat:true,free:true}); A.light(3,5,100,.7,'lamp');
 };
@@ -7439,20 +7836,20 @@ RBUILD.clinic=(A,Rm,rn,b,d)=>{
 };
 RBUILD.hall=(A,Rm,rn,b,d)=>{
   const w=Rm.w=14, h=Rm.h=10; Rm.floor='tile'; Rm.fc=0xc8bca4; Rm.wt=2; Rm.door=7; A.win(2.3); A.win(w-3.3); A.banner(5.2,0x2a4a8a); A.banner(8.2,0x2a4a8a);
-  A.add('desk',4.8,1.3,4.4,1,{stuff:[{t:'book',x:10,y:5,c:'#7a2a2a'},{t:'candle',x:44,y:6},{t:'coins',x:60,y:6}]}); A.keep(7,.9,0,'clerk'); A.light(7,2,120,.8,'lamp');
+  Rm.gate=[[3.8,3.4],[3.8,.9]]; A.add('desk',4.8,1.3,4.4,1,{stuff:[{t:'book',x:10,y:5,c:'#7a2a2a'},{t:'candle',x:44,y:6},{t:'coins',x:60,y:6}]}); A.keep(7,.9,0,'clerk'); A.light(7,2,120,.8,'lamp');
   A.add('maptable',1.2,4.6,3,2,{}); A.add('bench',9.5,5,3,1,{}); A.add('bench',9.5,7,3,1,{}); A.seat(11,5.6,'n'); A.add('runner',6.2,3,1.6,h-3,{flat:true,free:true}); A.add('bookcase',.5,0,2,1,{}); A.add('bookcase',w-2.5,0,2,1,{}); A.add('plant',1,h-2,1,1,{}); A.add('plant',w-1.7,h-2,1,1,{});
 };
 RBUILD.hall2=RBUILD.hall;
 RBUILD.barn=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp=SHOPS.barn, w=Rm.w=12, h=Rm.h=8; Rm.floor='dirt'; Rm.wt=1; Rm.door=6; A.win(w-3);
   A.add('hay',.5,0,3,2,{}); A.add('hay',w-3.5,0,3,2,{}); A.add('crate',4.6,.4,1,1,{prod:[0xe8d8a0]}); A.add('sack',5.8,.5,1,1,{sc:0xd8c8a0}); A.add('sack',6.8,.4,1,1,{sc:0xc8b888});
-  A.add('counter',3.5,3.1,5,1,{stuff:[{t:'coins',x:12,y:6},{t:'fruit',x:50,y:6,c:'#e8d8a0'}]}); A.keep(6,2.2,0,'keeper'); A.light(6,1.9,100,.8,'lamp'); A.add('barrel',.6,5.4,1,1,{}); A.add('cart',w-3.4,5.2,2,1,{}); A.add('hay',.5,3.3,2,1,{});
+  Rm.gate=[[3.0,4.5],[3.0,2.2]]; A.add('counter',3.5,3.1,5,1,{stuff:[{t:'coins',x:12,y:6},{t:'fruit',x:50,y:6,c:'#e8d8a0'}]}); A.keep(6,2.2,0,'keeper'); A.light(6,1.9,100,.8,'lamp'); A.add('barrel',.6,5.4,1,1,{}); A.add('cart',w-3.4,5.2,2,1,{}); A.add('hay',.5,3.3,2,1,{});
 };
 RBUILD.stable=RBUILD.barn;
 RBUILD.windmill=(A,Rm,rn,b,d)=>{
   const sp=Rm.sp=SHOPS.windmill, w=Rm.w=9, h=Rm.h=9; Rm.floor='wood'; Rm.fc=0x8a6a44; Rm.door=4.5; A.win(w/2-.4);
   A.add('mill',2.5,.8,4,3,{}); A.add('sack',.5,.4,1,1,{sc:0xf0ece0}); A.add('sack',1.4,.5,1,1,{sc:0xe8e4d8}); A.add('sack',w-1.6,.4,1,1,{sc:0xf0ece0}); A.add('crate',w-2.6,.5,1,1,{prod:[0xe8d8a0]});
-  A.add('counter',.5,4.6,3.6,1,{stuff:[{t:'scale',x:14,y:5},{t:'coins',x:40,y:6}]}); A.keep(2.3,3.8,0,'keeper'); A.light(2.3,3.5,100,.8,'lamp'); A.add('barrel',w-1.6,5.4,1,1,{}); A.add('sack',w-2.6,5.4,1,1,{sc:0xd8c8a0});
+  Rm.gate=[[5,5.6],[5,4.2]]; A.add('counter',.5,4.6,3.6,1,{stuff:[{t:'scale',x:14,y:5},{t:'coins',x:40,y:6}]}); A.keep(2.3,3.8,0,'keeper'); A.light(2.3,3.5,100,.8,'lamp'); A.add('barrel',w-1.6,5.4,1,1,{}); A.add('sack',w-2.6,5.4,1,1,{sc:0xd8c8a0});
 };
 
 /* ---- baking: floor, walls, decoration and furniture sprites ---- */
@@ -7593,7 +7990,7 @@ function populateRoom(IN){
   const hr=bldOpen(b).open, staff=V.npcs.filter(n=>n.work===b.id&&n.inside===b.id), placedS=new Set();
   const jobRole={baker:'keeper',smith:'keeper',innkeeper:'keeper',barmaid:'keeper',merchant:'keeper',shopkeeper:'keeper',craftsman:'keeper',priest:'priest',teacher:'teacher',doctor:'doctor',clerk:'clerk',guard:'keeper',librarian:'librarian',miller:'keeper',farmhand:'keeper',stablehand:'keeper'};
   staff.forEach(n=>{ if(!hr&&k!=='house')return; let ks=null; for(let i=0;i<Rm.keep.length;i++)if(!usedKeep.has(i)){ ks=Rm.keep[i]; usedKeep.add(i); break; }
-    placedS.add(n); if(ks)mk(n,ks.x,ks.y,'keeper',{face:ks.face,role:jobRole[n.job]||'keeper'}); else{ const s=Rm.spots[Math.floor(Math.random()*Rm.spots.length)]||[Rm.w/2,Rm.h/2]; mk(n,s[0],s[1],'wander',{role:jobRole[n.job]}); } });
+    placedS.add(n); if(ks)mk(n,ks.x,ks.y,'keeper',{face:ks.face,role:jobRole[n.job]||'keeper',beh:Rm.gate?1:0}); else{ const s=Rm.spots[Math.floor(Math.random()*Rm.spots.length)]||[Rm.w/2,Rm.h/2]; mk(n,s[0],s[1],'wander',{role:jobRole[n.job]}); } });
   const sleepNow=slot=>slot===0;
   const roomCap=k==='house'?(BT[b.t].cap||4)+2:clamp(Math.round(b.w*b.h*1.4)+1,4,14);
   for(const n of V.npcs){
@@ -7672,6 +8069,7 @@ function intServices(n,V){
   const shopOpt=lab=>({label:lab,fn:()=>{ if(hostile){ talkSay('I DON\'T SERVE THE LIKES OF YOU.'); return; } if(!bldOpen(b).open){ talkSay('WE\'RE CLOSING UP. COME BACK TOMORROW.'); return; } talkClose(); openShop(b,V,n); }});
   if(k==='church'||k==='chapel')out.push({label:'DONATE  '+fmtM(25),fn:()=>donate(n)});
   else if(k==='clinic'){ out.push({label:'TREAT MY WOUNDS  '+fmtM(90),fn:()=>hostile?talkSay('I\'LL NOT TREAT YOU.'):treatMe(n)}); out.push(shopOpt('BUY MEDICINE')); }
+  else if(b.t==='bank'&&a.mode==='keeper'){ out.push({label:'BANKING',fn:()=>{ if(hostile){ talkSay('I DO NOT SERVE THE LIKES OF YOU.'); return; } if(!bldOpen(b).open){ talkSay('THE BANK IS CLOSED. COME BACK DURING BANKING HOURS.'); return; } talkClose(); openBank(b,V,n); }}); }
   else if(sp&&a.mode==='keeper'){ out.push(shopOpt(k==='tavern'||k==='inn'?'SEE THE MENU':'SEE WHAT YOU SELL AND BUY')); if(k==='inn')out.push({label:'RENT A BED  '+fmtM(80),fn:()=>hostile?talkSay('NO ROOMS FOR YOU.'):rentBed(n)}); }
   if(CL_STORE[b.t]&&a.mode==='keeper')out.push({label:'BROWSE CLOTHES',fn:()=>{ if(hostile){ talkSay('I DON\'T SERVE THE LIKES OF YOU.'); return; } if(!bldOpen(b).open){ talkSay('WE\'RE CLOSING UP. COME BACK TOMORROW.'); return; } talkClose(); clOpenStore(b,V,n); }});
   return out;
@@ -7706,8 +8104,8 @@ function renderInterior0(){
     else if(e.bd){ const bd=e.bd; bodyDraw(bd,sx(bd.x*IS),sy(bd.y*IS),z); }
     else if(e.a){ const a=e.a; if(a.mode==='sleep')continue; drawActorIn(a,sx(a.x*IS),sy(a.y*IS),z,a.mode==='sit'); }
     else if(G.sleep){ drawSleepPose(sx(q.x*IS),sy(q.y*IS),z,P,true); }
-    else{ const sp=playerSprite(P), px=sx(q.x*IS), py=sy(q.y*IS); if(P.carry){ const cb=(G.bodies||[]).find(x=>x.id===P.carry), lf=cb&&cb.lift!==undefined?cb.lift:1; py+=Math.round(z*(1+(1-lf)*2.5)); } X.fillStyle='rgba(0,0,0,.28)'; X.fillRect(px-4*z,py-z,8*z,z); X.fillRect(px-3*z,py-2*z,6*z,z); X.fillRect(px-3*z,py,6*z,z); const oz=cam.z; cam.z=z; let ox=0,oy=0; if(P.swing>0){ const k=axePose(P), v=DIRVEC[P.dir]; ox=Math.round(v[0]*k.lean*.8*z); oy=Math.round(v[1]*k.lean*.5*z+(k.p>.46&&k.p<.72?z*.7:0)); drawAxeSwing(P,px,py,true); } X.drawImage(sp.cv,px-PCX*z+ox,py-PCY*z+oy,PCW*z,PCH*z); if(P.swing>0)drawAxeSwing(P,px+ox,py+oy,false); cam.z=oz; if(P.bf>.12){ X.fillStyle='rgba(140,14,14,'+Math.min(.9,.3+P.bf*.65)+')'; X.fillRect(px-3*z,py-2*z,2*z,2*z); X.fillRect(px+1*z,py-2*z,2*z,2*z); } }
-  }catch(er){ X.globalAlpha=1; X.globalCompositeOperation='source-over'; }
+    else{ const sp=playerSprite(P), px=sx(q.x*IS); let py=sy(q.y*IS); if(P.carry){ const cb=(G.bodies||[]).find(x=>x.id===P.carry), lf=cb&&cb.lift!==undefined?cb.lift:1; py+=Math.round(z*(1+(1-lf)*2.5)); } X.fillStyle='rgba(0,0,0,.28)'; X.fillRect(px-4*z,py-z,8*z,z); X.fillRect(px-3*z,py-2*z,6*z,z); X.fillRect(px-3*z,py,6*z,z); const oz=cam.z; cam.z=z; let ox=0,oy=0; if(P.swing>0){ const k=axePose(P), v=DIRVEC[P.dir]; ox=Math.round(v[0]*k.lean*.8*z); oy=Math.round(v[1]*k.lean*.5*z+(k.p>.46&&k.p<.72?z*.7:0)); drawAxeSwing(P,px,py,true); } X.drawImage(sp.cv,px-PCX*z+ox,py-PCY*z+oy,PCW*z,PCH*z); if(P.swing>0)drawAxeSwing(P,px+ox,py+oy,false); cam.z=oz; if(P.bf>.12){ X.fillStyle='rgba(140,14,14,'+Math.min(.9,.3+P.bf*.65)+')'; X.fillRect(px-3*z,py-2*z,2*z,2*z); X.fillRect(px+1*z,py-2*z,2*z,2*z); } }
+  }catch(er){ X.globalAlpha=1; X.globalCompositeOperation='source-over'; if(!window.__ie){ window.__ie=1; console.error(er); } }
   }
   // lighting
   const amb=.07+night*.5; X.fillStyle='rgba(8,10,30,'+amb.toFixed(3)+')'; X.fillRect(0,0,W,H);
@@ -7748,13 +8146,13 @@ function shopRows(S){
   return Object.keys(cnt).filter(id=>shopBuys(S.sp,id)).sort((a,c)=>ITEMS[a].n.localeCompare(ITEMS[c].n)).map(id=>({id,price:sellPrice(id,S.mult),q:cnt[id]}));
 }
 function maxQty(S,r){
-  const P=G.pl; if(S.tab===1)return S.w?Math.min(r.q,Math.floor(S.w.cash/r.price)):r.q; let m=Math.min(r.q,Math.floor(P.cash/r.price)); while(m>0&&!canFit(r.id,m))m--; return m;
+  const P=G.pl; if(S.tab===1)return S.w?Math.min(r.q,Math.floor(S.w.cash/r.price)):S.b?Math.min(r.q,Math.floor(tillOf(S.b).c/r.price)):r.q; let m=Math.min(r.q,Math.floor(P.cash/r.price)); while(m>0&&!canFit(r.id,m))m--; return m;
 }
 function shopDo(S,r,qty){
   const P=G.pl; if(qty<1)return; const tot=r.price*qty;
   if(S.tab===0){ if(P.cash<tot){ toast('NOT ENOUGH MONEY',RED); sfx.err(); return; } if(!canFit(r.id,qty)){ toast('PACK FULL',RED); sfx.err(); return; }
-    P.cash-=tot; addItem(r.id,qty); if(S.w){ const e=S.w.bag.find(x=>x[0]===r.id); if(e){ e[1]-=qty; if(e[1]<=0)S.w.bag.splice(S.w.bag.indexOf(e),1); } S.w.cash+=tot; } else{ const q=stockOf(S.b,S.sp); q[r.id]=Math.max(0,(q[r.id]||0)-qty); } sfx.coin(); toast('BOUGHT '+qty+' '+ITEMS[r.id].n+'  -'+fmtM(tot),AMB); }
-  else{ if(countItem(r.id)<qty)return; if(S.w&&S.w.cash<tot){ toast('THEY CANNOT AFFORD THAT',RED); sfx.err(); return; } takeItem(r.id,qty); P.cash+=tot; if(S.w){ S.w.cash-=tot; const e=S.w.bag.find(x=>x[0]===r.id); if(e)e[1]+=qty; else S.w.bag.push([r.id,qty]); } if(S.sp.sells.includes(r.id)){ const q=stockOf(S.b,S.sp); q[r.id]=Math.min(99,(q[r.id]||0)+qty); } sfx.coin(); toast('SOLD '+qty+' '+ITEMS[r.id].n+'  +'+fmtM(tot),GRN); }
+    P.cash-=tot; addItem(r.id,qty); if(S.w){ const e=S.w.bag.find(x=>x[0]===r.id); if(e){ e[1]-=qty; if(e[1]<=0)S.w.bag.splice(S.w.bag.indexOf(e),1); } S.w.cash+=tot; } else{ const q=stockOf(S.b,S.sp); q[r.id]=Math.max(0,(q[r.id]||0)-qty); } if(!S.w&&S.b){ const tl=tillOf(S.b); tl.rec.c+=tot; tl.rec.pop=Math.min(2.5,tl.rec.pop+.03); } sfx.coin(); toast('BOUGHT '+qty+' '+ITEMS[r.id].n+'  -'+fmtM(tot),AMB); }
+  else{ if(countItem(r.id)<qty)return; if(S.w&&S.w.cash<tot){ toast('THEY CANNOT AFFORD THAT',RED); sfx.err(); return; } if(!S.w&&S.b){ const tl=tillOf(S.b); if(tl.c<tot){ toast('THE TILL CANNOT COVER THAT',RED); sfx.err(); return; } tl.rec.c-=tot; } takeItem(r.id,qty); P.cash+=tot; if(S.w){ S.w.cash-=tot; const e=S.w.bag.find(x=>x[0]===r.id); if(e)e[1]+=qty; else S.w.bag.push([r.id,qty]); } if(S.sp.sells.includes(r.id)){ const q=stockOf(S.b,S.sp); q[r.id]=Math.min(99,(q[r.id]||0)+qty); } sfx.coin(); toast('SOLD '+qty+' '+ITEMS[r.id].n+'  +'+fmtM(tot),GRN); }
   S.qty=1;
 }
 function drawShop(){
@@ -8118,17 +8516,24 @@ function wSay(w,kind,silent){
   else pool=WTH[kind]||WTH.walk;
   w.thought=fill_(pkr(pool),w); if(!silent){ const P=G.pl; }
 }
+function campFree(w,x,y,family){                                      // never inside a town (streets, plaza, houses), never on objects, never on or beside another camp
+  for(const V of G.vlist){ if(x>=V.x0-3&&x<=V.x1+3&&y>=V.y0-3&&y<=V.y1+3)return false; }
+  for(let dy=-1;dy<=3;dy++)for(let dx=-2;dx<=3;dx++){ const tx=Math.floor(x)+dx, ty=Math.floor(y)+dy; if(G.occ.has(tk(tx,ty)))return false; const n=nodeAt(tx,ty); if(n&&n.t!==5&&n.t!==8&&n.t!==9)return false; }
+  for(const c of (G.camps||[]))if(Math.hypot(c.x-x,c.y-y)<5)return false;
+  for(const o of G.wand)if(o!==w&&o.camp&&!(family&&o.fam&&w.fam&&o.fam.gid===w.fam.gid)&&Math.hypot(o.camp.x-x,o.camp.y-y)<5)return false;
+  return true;
+}
 function wCampSpot(w){
   const W=w.dk?G.vil.get(w.dk):null; let x=Math.floor(w.x), y=Math.floor(w.y);
   if(W&&Math.hypot(W.cx-w.x,W.cy-w.y)<W.L+6){ const a=Math.atan2(w.y-W.cy||.01,w.x-W.cx||.01); x=Math.floor(W.cx+Math.cos(a)*(W.L+9)); y=Math.floor(W.cy+Math.sin(a)*(W.L*.5+9)); }
-  const offs=[[0,0],[2,0],[-2,0],[0,2],[0,-2],[3,3],[-3,3],[3,-3],[-3,-3],[5,0],[-5,0],[0,5],[0,-5],[6,6],[-6,6],[6,-6],[-6,-6],[9,0],[-9,0]];
-  for(const [ox,oy] of offs){ if(!wBlocked(x+ox+.5,y+oy+.5,true)&&!wBlocked(x+ox+2.5,y+oy+.5,true)&&!wBlocked(x+ox-1.5,y+oy+1.5,true))return {x:x+ox,y:y+oy}; }
+  const offs=[[0,0]]; for(let r=3;r<=66;r+=3)for(let a=0;a<12;a++)offs.push([Math.round(Math.cos(a*Math.PI/6)*r),Math.round(Math.sin(a*Math.PI/6)*r)]);
+  for(const [ox,oy] of offs){ if(!wBlocked(x+ox+.5,y+oy+.5,true)&&!wBlocked(x+ox+2.5,y+oy+.5,true)&&!wBlocked(x+ox-1.5,y+oy+1.5,true)&&campFree(w,x+ox,y+oy))return {x:x+ox,y:y+oy}; }
   return {x,y};
 }
 function wMakeCamp(w){
   const sp=wCampSpot(w), items=w.bag.length, rich=items>=6&&w.wl>45, fire=!w.poor||items>0||w.wl>30, gid=w.fam&&w.fam.gid;
   const ld=gid?G.wand.find(o=>o!==w&&o.fam&&o.fam.gid===gid&&o.camp&&o.camp.kind!=='rest'&&(o.st==='camp')&&Math.hypot(o.x-w.x,o.y-w.y)<16):null;
-  if(ld){ let x=sp.x,y=sp.y; for(const [ox,oy] of [[4,1],[-4,1],[1,4],[-4,-2],[4,-2],[7,1]]){ const cx=Math.floor(ld.camp.x)+ox, cy=Math.floor(ld.camp.y)+oy; if(!wBlocked(cx+.5,cy+.5,true)&&!wBlocked(cx+2.5,cy+.5,true)&&!G.wand.some(o=>o!==w&&o.camp&&Math.abs(o.camp.x-cx)<3&&Math.abs(o.camp.y-cy)<3)){ x=cx; y=cy; break; } }
+  if(ld){ let x=sp.x,y=sp.y; for(const [ox,oy] of [[4,1],[-4,1],[1,4],[-4,-2],[4,-2],[7,1]]){ const cx=Math.floor(ld.camp.x)+ox, cy=Math.floor(ld.camp.y)+oy; if(!wBlocked(cx+.5,cy+.5,true)&&!wBlocked(cx+2.5,cy+.5,true)&&campFree(w,cx,cy,true)&&!G.wand.some(o=>o!==w&&o.camp&&Math.abs(o.camp.x-cx)<3&&Math.abs(o.camp.y-cy)<3)){ x=cx; y=cy; break; } }
     w.camp={x,y,kind:items?'roll':'bare',fire:0,seed:ld.camp.seed}; }                  // shares the leader's fire
   else w.camp={x:sp.x,y:sp.y,kind:rich?'tent':items?'roll':'bare',fire:fire?1:0,seed:w.id};
   w.st='camp'; w.cph=0; w.rt=[]; wSay(w,'camp');
@@ -8199,6 +8604,7 @@ function wStep(w,dt){
       let S=G.smap&&G.smap.get(w.site); if(!S)S=siteEnsure(w.site); if(!S){ w.moving=false; break; }
       if(S.state!=='settled'){ w.st='walk'; w.camp=null; w.site=null; if(!w.rt.length&&w.to)w.rt=[{x:w.to.x,y:w.to.y}]; break; }
       if(w.dd!==G.dn){ w.dd=G.dn; if(w.fam&&w.fam.me===0&&Math.random()<.03)siteLeave(S); }          // a family rarely decides to pack up and move on
+      if(!w.camp){ w.st='walk'; w.site=null; w.moving=false; if(!w.rt.length&&w.to)w.rt=[{x:w.to.x,y:w.to.y}]; break; }          // a settled traveller whose camp spot was lost
       const bx=w.camp.x+1.5, by=w.camp.y+.95;
       if(night){ if(!w.bedded){ const d=wMove(w,dt,bx,by,near); if(d<.5)w.bedded=1; break; } w.moving=false; w.sleep=!w.talk; if(w.sleep){ w.x=bx; w.y=by; } break; }
       w.bedded=0; const g=w.rt[0];
