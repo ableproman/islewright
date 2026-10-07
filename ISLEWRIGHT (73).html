@@ -4842,8 +4842,15 @@ const eateries=V=>V._eat||(V._eat=V.B.filter(b=>['tavern','inn'].includes(BT[b.t
 const shopsFor=V=>V._shp||(V._shp=V.B.filter(b=>['grocer','bakery','butcher','fishhut','market','fishmarket'].includes(b.t)));
 function pickShop(V,n,seed){
   const L=shopsFor(V); if(!L.length)return null; const hb=G.bmap.get(n.home); let best=null,bs=1e9;
-  for(const b of L){ const d=hb?Math.hypot(b.x-hb.x,b.y-hb.y):0, sc=d+hr01(b.id,seed,5)*9-(b.t==='grocer'||b.t==='market'?6:0); if(sc<bs){ bs=sc; best=b; } }
+  for(const b of L){ const d=hb?Math.hypot(b.x-hb.x,b.y-hb.y):0, sc=d+hr01(b.id,seed+(n.id|0)*7,5)*9-(b.t==='grocer'||b.t==='market'?6:0); if(sc<bs){ bs=sc; best=b; } }
   return best;
+}
+function shopUrge(V,n,h,dn,slot){                                  // how much this person feels like going out to the shops today: hungry, low pantry, nosy, or simply at home all day
+  const t=n.tr||{}; let u=.12+(t.cu||5)*.012+(t.fr||5)*.008;
+  if(h){ const per=h.pant/Math.max(1,h.mem); if(per<2.2)u+=.35; else if(per<3.4)u+=.15; }
+  if(n.food!=null&&n.food<45)u+=.25;
+  if(n.wfh==='all'||n.job==='homemaker'||n.job==='retired'||n.jobless)u+=.2;
+  return clamp(u+(hr01(n.id,dn,70+slot)-.5)*.3,0,.9);
 }
 const hasChurch=V=>V.B.find(b=>b.t==='church'||b.t==='chapel');
 const isFlex=n=>!!(n.wfh==='all'||n.job==='homemaker'||n.job==='retired'||n.homeless);
@@ -4919,6 +4926,7 @@ function buildSched(V,n){
   };
   const lunchWhere=(bW)=>{
     if(shopper)return 'shop';
+    if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,71)<shopUrge(V,n,h,dn,1)*.75)return 'shop';
     let pH=.5; if(bW&&G.bmap.get(n.home)){ const d=Math.hypot(bW.x-G.bmap.get(n.home).x,bW.y-G.bmap.get(n.home).y); pH=d<12?.62:.2; }
     const r=n.lunchPref*.6+rr(7)*.4; if(r<pH)return 'home'; if(r<pH+.22&&eateries(V).length)return 'tavern'; if(r<pH+.4)return 'bench'; return 'work';
   };
@@ -4928,7 +4936,7 @@ function buildSched(V,n){
     if(n.wfh==='am'){ const e2=Math.max(c+.4,10.6+rr(6)*.8); push('wfh',c,e2); c=e2; }
     else if(ws>c+.05){ push('prep',c,ws); c=ws; }
     const L0=Math.max(c+.4,12+hr01(wid,V.cx|0,dn+41)*.9+(n.dshift==='am'?-.9:n.dshift==='pm'?1.1:0)), L1=L0+.65+rr(8)*.45;
-    push('work',c,L0,{work:1}); push('lunch',L0,L1,{meal:'l',where:lunchWhere(bW),shop:shopper?(pickShop(V,n,dn)||{}).id:undefined});
+    push('work',c,L0,{work:1}); { let lw=lunchWhere(bW), lsh=lw==='shop'?pickShop(V,n,dn):null; if(lw==='shop'&&!lsh)lw='bench'; push('lunch',L0,L1,{meal:'l',where:lw,shop:lsh?lsh.id:undefined}); }
     c=L1; const we=n.job==='guard'?clamp(n.we+(rr(9)-.5)*.4,n.we<18?13.6:19.2,n.dshift==='pm'?23.2:22.4):clamp(Math.min(n.we,23.3)+(rr(9)-.5)*.5,13.8,23.3);
     if(we>20.2&&h.dinner<we){ bed=Math.min(23.95,Math.max(bed,we+.4)); const d0=Math.max(c+.3,17.7); push('work',c,d0,{work:1}); push('dinner',d0,d0+.6,{meal:'d',where:'work'}); push('work',d0+.6,we,{work:1}); c=we; push('relax',c,bed); push('sleep',bed,24); }
     else{ push('work',c,Math.max(c+.5,we),{work:1}); c=B[B.length-1].e; evening(c); }
@@ -4938,7 +4946,10 @@ function buildSched(V,n){
     if(shopper){ const sh=pickShop(V,n,dn); if(sh){ const hh0=hoursOf(sh), es=clamp(Math.max(c+.2,8.4+rr(15)*1.3),hh0[0]+.3,Math.max(hh0[0]+.4,hh0[1]-1.1)); if(es>c+.1)push(mk,c,es); push('errand',es,es+.55+rr(16)*.3,{shop:sh.id}); c=B[B.length-1].e; } else{ push('errand',c+.3,c+1,{shop:undefined,forage:1}); c=B[B.length-1].e; } }
     { const bkB=bankOf(V); if(!shopper&&bkB&&n.age>=18&&wantsBank(V,n,dn)){ const hb=hoursOf(bkB), es=clamp(Math.max(c+.2,9.4+rr(31)*1.6),hb[0]+.3,hb[1]-.9); if(es>=c+.1&&es+.5<L0){ push(mk,c,es); push('errand',es,es+.5,{shop:bkB.id,bank:1}); c=B[B.length-1].e; } } }
     { const mEnd=Math.max(c+.2,L0); if(mk==='jobhunt'||mk==='social'){ const out=Math.min(mEnd-.4,9.0+rr(20)*1.1); if(out>c+.3){ push(rr(21)<.5?'chores':'yard',c,out,{garden:1}); c=out; } } push(mk,c,mEnd); c=B[B.length-1].e; }
-    push('lunch',c,c+.7+rr(8)*.5,{meal:'l',where:n.lunchPref<.62?'home':n.lunchPref<.82&&eateries(V).length?'tavern':'bench'}); c=B[B.length-1].e;
+    { let lw=n.lunchPref<.62?'home':n.lunchPref<.82&&eateries(V).length?'tavern':'bench', lsh=null;
+      if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,71)<shopUrge(V,n,h,dn,1)*.85){ lsh=pickShop(V,n,dn); if(lsh)lw='shop'; }
+      push('lunch',c,c+.7+rr(8)*.5,{meal:'l',where:lw,shop:lsh?lsh.id:undefined}); c=B[B.length-1].e; }
+    if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,72)<shopUrge(V,n,h,dn,2)*.6){ const sh=pickShop(V,n,dn+3), hh=sh?hoursOf(sh):null; if(sh&&c+.7<hh[1]-.2){ push('errand',c+.1,c+.1+.5+rr(42)*.3,{shop:sh.id,personal:1}); c=B[B.length-1].e; } }
     if(n.wfh==='all'){ const e=Math.max(c+.5,16.2+rr(17)*1.4); push('wfh',c,e); c=e; }
     else{ const r=rr(18), e=Math.max(c+.6,15.6+rr(17)*1.6); push(r<.35?'social':r<.6?'yard':r<.8?'chores':'social',c,e,{garden:r>=.35&&r<.6?1:0}); c=e; }
     evening(c);
@@ -5012,7 +5023,7 @@ function doingFor(V,n,blk){
     case 'wfh': return n.tdo?pk(n.tdo):'WORKING AT HOME';
     case 'work': return n.gig?pk(n.gdo):pk(WORKD[n.job]||WORKD.none);
     case 'lunch': return blk.where==='shop'?'PICKING UP FOOD ON THE LUNCH BREAK':blk.where==='scraps'?'EATING A STALE CRUST':'EATING LUNCH';
-    case 'errand': return blk.bank?'GOING TO THE BANK':'SHOPPING FOR FOOD';
+    case 'errand': return blk.bank?'GOING TO THE BANK':blk.personal?'BROWSING THE SHOPS':'SHOPPING FOR FOOD';
     case 'dinner': return blk.where==='soup'?'SHARING A BOWL OF SOUP':'HAVING DINNER';
     case 'meet': return 'CHATTING WITH '+(pn?pn.name:'A FRIEND');
     case 'visit': return 'VISITING '+(pn?pn.name:'A FRIEND');
@@ -5042,7 +5053,8 @@ function destForBlk(V,n,blk){
   }
   const hd=doorOf(V,n.home), home=()=>({x:hd.x,y:hd.y,inside:n.home,k:'home'}), yard=()=>({x:hd.x+(r-.5)*4,y:hd.y+.55+r2*1.1,inside:null,k:'yard'});
   const tav=pickBuilding(V,['tavern','inn']), tavD=()=>{ if(tav&&!bldFull(V,tav.id,n,7)){ const td=doorOf(V,tav.id); return {x:td.x,y:td.y,inside:tav.id,k:'tavern'}; } return plazaAt(r*997); };
-  const shopD=()=>{ const sh=blk.shop!==undefined?G.bmap.get(blk.shop):null; if(!sh)return null; const d=doorOf(V,sh.id); return {x:d.x,y:d.y,inside:BT[sh.t].d==='none'||BT[sh.t].k==='market'?null:sh.id,k:'shop',shopId:sh.id}; };
+  const shopD=()=>{ const sh=blk.shop!==undefined?G.bmap.get(blk.shop):null; if(!sh)return null; if(BT[sh.t].k!=='market'&&bldFull(V,sh.id,n))return null;       // a shop only holds so many people at once
+ const d=doorOf(V,sh.id); return {x:d.x,y:d.y,inside:BT[sh.t].d==='none'||BT[sh.t].k==='market'?null:sh.id,k:'shop',shopId:sh.id}; };
   switch(k){
     case 'sleep': case 'getup': case 'bfast': case 'prep': case 'wfh': case 'relax': case 'dinner':
       if(k==='dinner'&&blk.where==='work'&&n.work){ const wd=doorOf(V,n.work); return {x:wd.x,y:wd.y,inside:n.work,k:'work'}; }
@@ -5108,7 +5120,8 @@ function doErrand(V,n,blk){
   const h=hhOf(V,n.home), sh=n.tgt&&n.tgt.shopId!==undefined?G.bmap.get(n.tgt.shopId):null;
   if(sh&&!bldOpen(sh).open){ n.shopMiss=1; return; }
   if(blk.bank){ if(sh)bankVisit(V,n,sh); return; }
-  if(sh){ const tl=tillOf(sh,V); tl.rec.pop=Math.min(2.5,tl.rec.pop+.07); tl.rec.c+=Math.round(h.mem*(5+hr01(n.id,G.dn,96)*6)); }
+  if(sh){ const tl=tillOf(sh,V); tl.rec.pop=Math.min(2.5,tl.rec.pop+.07); tl.rec.c+=(blk.personal||blk.k==='lunch'&&h.shopper!==n.id)?Math.round(4+hr01(n.id,G.dn,96)*6):Math.round(h.mem*(5+hr01(n.id,G.dn,96)*6)); }
+  if(blk.personal||(blk.k==='lunch'&&h.shopper!==n.id)){ h.pant+=1+Math.round(hr01(n.id,G.dn,97)*2); n.food=Math.min(100,n.food+(blk.k==='lunch'?35:8)); n.hungry=0; return; }       // a bite for the day and a few things for the house
   h.pant+=Math.round(h.mem*2.8+hr01(n.id,G.dn,95)*3); h.lastShop=G.whrs; h.needShop=false; n.food=Math.min(100,n.food+(blk.k==='lunch'?20:0));
 }
 function onArrive(V,n){
