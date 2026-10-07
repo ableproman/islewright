@@ -5694,7 +5694,6 @@ function bodyStage(b){ const a=G.whrs-b.t0; return a<4?0:a<14?1:a<40?2:3; }
 /* ---- something unusual: people notice it, grow wary, then talk, then the law hears of it ---- */
 function oddOf(P){
   if(P.carry)return {k:'body',s:3,t:[1.5,4,8]};
-  if(P.bf>.15)return {k:'assault',s:2,t:[2.5,6,11]};
   const id=heldId(), w=id&&WEAP[id]; if(w&&w.l&&!G.stand)return {k:'assault',s:1,t:[3,8,15]};
   return null;
 }
