@@ -5555,12 +5555,13 @@ function oddOf(P){
   const id=heldId(), w=id&&WEAP[id]; if(w&&w.l&&!G.stand)return {k:'assault',s:1,t:[3,8,15]};
   return null;
 }
-function oddScan(dt){
+function oddScan(dt){ try{ oddScan_(dt); }catch(e){ console.error(e); } }
+function oddScan_(dt){
   const P=G.pl; if(!P||G.in||G.dead||G.sleep||G.tr)return; P._oddA=(P._oddA||0)+dt; if(P._oddA<.25)return; const st=P._oddA; P._oddA=0;
   const V=robNearV(P), od=oddOf(P); if(!V){ return; }
   const rg=Math.max(8,sightRange(P)); let hot=0;
   for(const n of V.npcs){
-    if(n.inside||n.hid||n.sleeping||n.st==='inside'||n.age<10){ continue; }
+    if(n.inside||n.hid||n.sleeping||n.st==='inside'||n.age<10||!n.mem||!n.tr){ continue; }
     if(!od||!npcSees(n,P,rg)){ n.odT=Math.max(0,(n.odT||0)-st*.5); if(!n.odT)n.odL=0; continue; }
     if(n.job==='guard'&&P.carry){ n.odT=(n.odT||0)+st*2; } else n.odT=(n.odT||0)+st*(1+(n.tr&&n.tr.br<4?.3:0));
     const lv=n.odT>=od.t[2]?3:n.odT>=od.t[1]?2:n.odT>=od.t[0]?1:0, was=n.odL||0; if(lv<=was)continue; n.odL=lv;
