@@ -2544,7 +2544,7 @@ function startGame(mode,size,seed,name){
   const [sx,sy]=startNearVillage()||findStart(); G.start=[sx,sy];
   for(let j=-2;j<=2;j++)for(let i=-2;i<=2;i++){ const n=nodeAt(sx+i,sy+j); if(n)removeNode(n); }
   G.pl=newPlayer(sx+.5,sy+.5);
-  addItem('campkit',1); addItem('branch',4); addItem('berries',3);
+  addItem('campkit',1); addItem('branch',4); addItem('berries',3); G.sel=HOT-1;
   zoomLimits(); cam.tz=cam.z=2; cam.x=G.pl.x*TS; cam.y=G.pl.y*TS-5; G.over=0; G.clockUntil=T_+5;
   toast('PRESS '+keyName(bk('help'))+' FOR HELP',DIM);
 }
@@ -2743,7 +2743,7 @@ function loadGame(){
   P.cl=clNorm(d.pl.cl); clRefresh(P);
   P.mhp=60+40*P.hc/100; P.mst=60+40*P.sc/100;
   if(d.inv){ d.inv.forEach((e,i)=>{ if(e&&ITEMS[e[0]]&&i<INV)G.inv[i]={id:e[0],n:e[1]}; }); } else { addItem('campkit',1); addItem('branch',4); addItem('berries',3); }
-  G.sel=d.sel||0; G.packLvl=d.pk?1:0; G.cid=d.cid||0; G.camps=(d.camps||[]).map(c=>({x:c[0],y:c[1],fuel:c[2],id:c[3]})); G.drops=(d.drops||[]).filter(e=>ITEMS[e[2]]).map(e=>({x:e[0],y:e[1],id:e[2],n:e[3],t:0})); G.over=0;
+  G.sel=d.sel==null?HOT-1:d.sel; G.packLvl=d.pk?1:0; G.cid=d.cid||0; G.camps=(d.camps||[]).map(c=>({x:c[0],y:c[1],fuel:c[2],id:c[3]})); G.drops=(d.drops||[]).filter(e=>ITEMS[e[2]]).map(e=>({x:e[0],y:e[1],id:e[2],n:e[3],t:0})); G.over=0;
   zoomLimits(); cam.tz=cam.z=VIEW_LV.includes(d.cam.z)?d.cam.z:2; cam.x=d.cam.x; cam.y=d.cam.y; G.lastA=G.dn*24+G.tod; G.clockUntil=T_+4;
   return true;
 }
