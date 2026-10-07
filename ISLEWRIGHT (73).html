@@ -4416,6 +4416,13 @@ function buildVillage(site){
   // bounds
   V.x0=cx-L-6; V.x1=cx+L+6; V.y0=cy+rows[0]*ROWGAP-14; V.y1=cy+rows[rows.length-1]*ROWGAP+rw+12;
   buildGraph(V,cx,cy,L,rows,rw,cols);
+  { const want=[0,4,8,12][tier]||0, tries=[], nodes=V.nodes, pzr=V.plaza; let placed=0;                           // benches along the street sides, clear of doors and of the plaza
+    for(let a=0;a<nodes.length;a++)for(const b2 of V.adj[a]){ if(b2<=a)continue; const na=nodes[a], nb=nodes[b2], dx=nb.x-na.x, dy=nb.y-na.y, len=Math.hypot(dx,dy); if(len>=2)tries.push({mx:(na.x+nb.x)/2,my:(na.y+nb.y)/2,px:-dy/len,py:dx/len}); }
+    for(let i=tries.length-1;i>0;i--){ const j=Math.floor(rn()*(i+1)); const tmp=tries[i]; tries[i]=tries[j]; tries[j]=tmp; }
+    const enter=V.B.filter(b=>ENT.has(BT[b.t].k)).map(b=>doorOf(V,b.id));
+    for(const t of tries){ if(placed>=want)break; for(const off of [2.6,-2.6,3.4,-3.4]){ const tx=Math.floor(t.mx+t.px*off), ty=Math.floor(t.my+t.py*off);
+      if(G.occ.has(tk(tx,ty))||!grassAt(tx,ty))continue; if(pzr&&tx>=pzr.x0-1&&tx<=pzr.x1+1&&ty>=pzr.y0-1&&ty<=pzr.y1+1)continue; if(enter.some(d=>Math.hypot(d.x-tx,d.y-ty)<3.2))continue; if(V.B.some(b=>b.t==='bench'&&Math.hypot(b.x-tx,b.y-ty)<5))continue;
+      if(addB('bench',tx,ty,undefined)){ placed++; break; } } } }
   populate(V,rn,ri,pk);
   return V;
 }
@@ -4947,12 +4954,7 @@ function buildSched(V,n){
     if(eateries(V).length&&rr(13)<tavP&&bed-cc>1.3){ const dur=Math.min(bed-.5-(cc+.15),1+rr(14)*1.1); if(dur>.5){ push('relax',cc,cc+.15); push('tavern',cc+.15,cc+.15+dur); cc=cc+.15+dur; } }
     push('relax',cc,bed); push('sleep',bed,24);
   };
-  const lunchWhere=(bW)=>{
-    if(shopper)return 'shop';
-    if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,71)<shopUrge(V,n,h,dn,1)*.75)return 'shop';
-    let pH=.6; if(bW&&G.bmap.get(n.home)){ const d=Math.hypot(bW.x-G.bmap.get(n.home).x,bW.y-G.bmap.get(n.home).y); pH=d<12?.85:.5; }
-    const r=n.lunchPref*.6+rr(7)*.4; if(r<pH)return 'home'; if(r<pH+.1&&eateries(V).length)return 'tavern'; if(r<pH+.13)return 'bench'; return 'work';
-  };
+  const lunchWhere=(bW)=>shopper?'shop':pickLunch(V,n,h,dn,bW);
   if(hasWork){
     const bW=n.work?G.bmap.get(n.work):null, wid=n.work||(n.job==='farmer'?9001:n.job==='guard'?9002:9003);
     let ws=Math.max(c+.05,n.ws+(rr(5)-.5)*.35);
@@ -4969,8 +4971,7 @@ function buildSched(V,n){
     if(shopper){ const sh=pickShop(V,n,dn); if(sh){ const hh0=hoursOf(sh), es=clamp(Math.max(c+.2,8.4+rr(15)*1.3),hh0[0]+.3,Math.max(hh0[0]+.4,hh0[1]-1.1)); if(es>c+.1)push(mk,c,es); push('errand',es,es+.55+rr(16)*.3,{shop:sh.id}); c=B[B.length-1].e; } else{ push('errand',c+.3,c+1,{shop:undefined,forage:1}); c=B[B.length-1].e; } }
     { const bkB=bankOf(V); if(!shopper&&bkB&&n.age>=18&&wantsBank(V,n,dn)){ const hb=hoursOf(bkB), es=clamp(Math.max(c+.2,9.4+rr(31)*1.6),hb[0]+.3,hb[1]-.9); if(es>=c+.1&&es+.5<L0){ push(mk,c,es); push('errand',es,es+.5,{shop:bkB.id,bank:1}); c=B[B.length-1].e; } } }
     { const mEnd=Math.max(c+.2,L0); if(mk==='jobhunt'||mk==='social'){ const out=Math.min(mEnd-.4,9.0+rr(20)*1.1); if(out>c+.3){ push(rr(21)<.5?'chores':'yard',c,out,{garden:1}); c=out; } } push(mk,c,mEnd); c=B[B.length-1].e; }
-    { let lw=n.lunchPref<.78?'home':n.lunchPref<.92&&eateries(V).length?'tavern':n.lunchPref>.97?'bench':'home', lsh=null;
-      if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,71)<shopUrge(V,n,h,dn,1)*.85){ lsh=pickShop(V,n,dn); if(lsh)lw='shop'; }
+    { let lw=pickLunch(V,n,h,dn,null), lsh=null; if(lw==='shop'){ lsh=pickShop(V,n,dn); if(!lsh)lw='home'; }
       push('lunch',c,c+.7+rr(8)*.5,{meal:'l',where:lw,shop:lsh?lsh.id:undefined}); c=B[B.length-1].e; }
     if(shopsFor(V).length&&n.age>=14&&hr01(n.id,dn,72)<shopUrge(V,n,h,dn,2)*.6){ const sh=pickShop(V,n,dn+3), hh=sh?hoursOf(sh):null; if(sh&&c+.7<hh[1]-.2){ push('errand',c+.1,c+.1+.5+rr(42)*.3,{shop:sh.id,personal:1}); c=B[B.length-1].e; } }
     if(n.wfh==='all'){ const e=Math.max(c+.5,16.2+rr(17)*1.4); push('wfh',c,e); c=e; }
@@ -5148,9 +5149,22 @@ function weigh(n,opts){
   const t=n.tr||{}, thrift=.5+(10-(t.hu||5))*.04+(t.pi||5)*.02;
   return opts.map(o=>Object.assign({},o,{u:(o.need||0)-(o.cost||0)*thrift+(o.pref||0)+Math.random()*.25})).sort((a,b)=>b.u-a.u);
 }
+function weighPick(n,opts,rnd){                                      // the same weighing, but a sampled choice: strong favourites usually win, the others still happen now and then
+  const t=n.tr||{}, thrift=.5+(10-(t.hu||5))*.04+(t.pi||5)*.02, us=opts.map(o=>(o.need||0)-(o.cost||0)*thrift+(o.pref||0)), mx=Math.max(...us), w=us.map(u=>Math.exp((u-mx)/.2)), tot=w.reduce((a,c)=>a+c,0);
+  let x=rnd*tot; for(let i=0;i<opts.length;i++){ x-=w[i]; if(x<=0)return opts[i]; } return opts[opts.length-1];
+}
+function pickLunch(V,n,h,dn,bW){                                      // where to eat: home mostly, work or the tavern now and then, a bench for the older and retired, a shop when the pantry is low
+  const age=n.age||30, retired=n.job==='retired'||age>=65, hb=G.bmap.get(n.home), dist=bW&&hb?Math.hypot(bW.x-hb.x,bW.y-hb.y):6, bs=V._bn||(V._bn=V.B.filter(b=>b.t==='bench'));
+  const opts=[{k:'home',need:.9+(h.pant>=1?.1:-.35),cost:Math.min(.5,dist/70)}];
+  if(bW)opts.push({k:'work',need:.45,cost:0});
+  if(eateries(V).length)opts.push({k:'tavern',need:.45+(n.social||0)*.4,cost:.45});
+  if(bs.length)opts.push({k:'bench',need:.08+(age>=60?.32:0)+(retired?.22:0)+((n.social||0)>.55?.1:0),cost:0});
+  if(shopsFor(V).length&&age>=14)opts.push({k:'shop',need:shopUrge(V,n,h,dn,1)*.85,cost:.15});
+  return weighPick(n,opts,hr01(n.id,dn,200)).k;
+}
 const shopCapOf=b=>clamp(Math.round(b.w*b.h*1.4),3,12);
 const SHOPQ_TXT=['WAITING FOR THE {S} TO CLEAR','WAITING THEIR TURN OUTSIDE THE {S}','PEERING IN AT A BUSY {S}','CHECKING IF THE {S} HAS QUIETENED','EYEING THE QUEUE AT THE {S}','WAITING OUTSIDE THE {S}, BASKET IN HAND'];
-const SHOPQ_WALK=['TAKING A WALK UNTIL THE {S} QUIETENS','STRETCHING THEIR LEGS WHILE THE {S} IS BUSY','WANDERING THE PLAZA, WILL TRY THE {S} AGAIN'];
+const SHOPQ_WALK=['TAKING A WALK UNTIL THE {S} QUIETENS','STRETCHING THEIR LEGS WHILE THE {S} IS BUSY','STROLLING DOWN THE STREET, WILL TRY THE {S} AGAIN','WANDERING THE LANES UNTIL THE {S} CLEARS'];
 const SHOPPING_TXT=['WEIGHING UP WHAT TO BUY','COMPARING PRICES','CHECKING THE LIST FOR HOME','WORKING OUT WHAT THE FAMILY NEEDS','LOOKING OVER THE SHELVES','DECIDING WHETHER IT IS WORTH IT'];
 function shopBusy(V,n){                                                // true when the shop is full: they queue outside instead of crowding in
   const t=n.tgt; if(!t||!t.inside||t.k!=='shop')return false; const b=G.bmap.get(t.inside); if(!b)return false;
@@ -5163,7 +5177,7 @@ function shopQTick(V,n){
   if(q.walking){ if(n.st==='walk'||T_<q.walkEnd)return; q.walking=0; q.end=T_+14+Math.random()*10; n.ovr=null; n.slot=-9; return; }       // walk over: look at the shop again
   if(V.npcs.filter(o=>o!==n&&o.inside===b.id).length<shopCapOf(b)){ n.shopQ=null; n.ovr=null; n.path=[{x:n.x,y:n.y},{x:n.x+.02,y:n.y}]; n.pi=1; n.st='walk'; n.moving=true; return; }   // somebody came out: in they go
   if(T_<q.end)return;
-  if(q.tries<1&&V.plazaSpots&&V.plazaSpots.length){ const p=V.plazaSpots[Math.floor(Math.random()*V.plazaSpots.length)], d={x:p.x,y:p.y,inside:null,k:'walk',doing:SHOPQ_WALK[n.id%SHOPQ_WALK.length].replace('{S}',BT[b.t].n)}; q.tries++; q.walking=1; q.walkEnd=T_+22+Math.random()*18; n.ovrB=slotId(n.blk); n.ovr=d; routeTo(V,n,d); return; }
+  if(q.tries<1){ const pz=V.plaza, door=doorOf(V,b.id), outs=V.nodes.filter(nd=>!(pz&&nd.x>=pz.x0-1&&nd.x<=pz.x1+1&&nd.y>=pz.y0-1&&nd.y<=pz.y1+1)&&Math.hypot(nd.x-door.x,nd.y-door.y)>5&&Math.hypot(nd.x-door.x,nd.y-door.y)<30), p=outs.length?outs[Math.floor(Math.random()*outs.length)]:null; if(p){ const d={x:p.x+n.jx,y:p.y+n.jy,inside:null,k:'walk',doing:SHOPQ_WALK[n.id%SHOPQ_WALK.length].replace('{S}',BT[b.t].n)}; q.tries++; q.walking=1; q.walkEnd=T_+22+Math.random()*18; n.ovrB=slotId(n.blk); n.ovr=d; routeTo(V,n,d); return; } }
   n.noShop=slotId(n.blk); n.shopQ=null; n.ovr=null; n.slot=-9;           // still full: give it up for now, go back to work or home
 }
 function shopPlan(V,n,sh,sp,units,personal){                           // the invisible shop menu: they rank what is on the shelves against hunger, the pantry at home and what it costs
