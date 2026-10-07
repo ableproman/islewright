@@ -5044,6 +5044,7 @@ function doingFor(V,n,blk){
   blk=blk||curBlk(V,n); const pk=(a,s)=>a[Math.floor(G.tod*4+n.id+(s||0))%a.length], pn=blk.pn!==undefined?V.nid.get(blk.pn):null;
   if(n.ovr&&n.ovrB===slotId(blk)&&n.ovr.doing)return n.ovr.doing;
   if(n.shopping&&n.shopping.slot===slotId(blk)&&G.whrs<n.shopping.until)return SHOPPING_TXT[(n.id+((G.tod*3)|0))%SHOPPING_TXT.length];
+  if(n.sitB&&n.st!=='walk'&&blk.k!=='sleep')return SIT_TXT[(n.id+((G.tod*2)|0))%SIT_TXT.length];
   if(n.sleeping)return 'SLEEPING ON THE STREET';
   switch(blk.k){
     case 'sleep': return n.homeless?'AWAKE ON THE COLD STREET':n.awakeUntil>G.whrs?'AWAKE AND ON EDGE':awakeClear(n)?sleepAwake(V,n,blk):'SLEEPING';
@@ -5155,6 +5156,23 @@ function weigh(n,opts){
   const t=n.tr||{}, thrift=.5+(10-(t.hu||5))*.04+(t.pi||5)*.02;
   return opts.map(o=>Object.assign({},o,{u:(o.need||0)-(o.cost||0)*thrift+(o.pref||0)+Math.random()*.25})).sort((a,b)=>b.u-a.u);
 }
+function benchSeatFor(V,n){                                           // the nearest bench with a free seat (two to a bench), or nothing
+  const bs=V._bn||(V._bn=V.B.filter(b=>b.t==='bench')); let best=null, bd=1e9;
+  for(const b of bs){ const occ=V.npcs.filter(o=>o!==n&&(o.sitB===b.id||(o.tgt&&o.tgt.benchId===b.id))); if(occ.length>=2)continue; const d=Math.hypot(b.x-n.x,b.y-n.y); if(d<bd){ bd=d; const sl=occ.some(o=>o.sitSlot===0||(o.tgt&&o.tgt.slot===0))?1:0; best={x:b.x+.5+(sl?.22:-.22),y:b.y+1.12,inside:null,k:'bench',benchId:b.id,slot:sl,dist:d}; } }
+  return best;
+}
+const SIT_TXT=['SITTING ON A BENCH, ENJOYING THE SUN','PEOPLE WATCHING FROM A BENCH','RESTING THEIR FEET ON A BENCH','FEEDING THE BIRDS FROM A BENCH','TAKING A BREATHER ON A BENCH','WATCHING THE TOWN GO BY'];
+function freeTime(V,n,dt){                                            // free time with nothing pressing: stay put, or weigh up a seat on a bench for a while
+  n.ftT=(n.ftT||0)-dt; if(n.ftT>0)return; n.ftT=25+Math.random()*35;
+  if(n.sitB&&n.st!=='walk'){ if(G.whrs>=(n.sitUntil||0)){ n.sitB=0; n.ovr=null; n.slot=-9; } return; }
+  const blk=n.blk; if(!blk||!['relax','chores','yard','social','jobhunt'].includes(blk.k))return;
+  if(n.st==='walk'||n.busy||n.talk||n.shopQ||n.shopping||n.sleeping||(n.chat&&G.whrs<n.chat.until)||n.hunt||(n.ovr&&n.ovrB===slotId(blk))||n.food<25)return;
+  if(G.tod<8||G.tod>20)return; const seat=benchSeatFor(V,n); if(!seat)return;
+  const age=n.age||30, soc=n.social||0, rest=blk.k==='relax'||blk.k==='social'||blk.k==='jobhunt';
+  const pick=weighPick(n,[{k:'stay',need:.6+(blk.k==='chores'?.2:0),cost:0},{k:'bench',need:.15+(age>=55?.25:0)+soc*.3+(rest?.25:0)+((G.tod>=11&&G.tod<=17)?.1:0),cost:Math.min(.5,seat.dist/60)}],Math.random());
+  if(pick.k!=='bench')return;
+  n.sitUntil=G.whrs+.4+Math.random()*.9; n.ovrB=slotId(blk); seat.doing=SIT_TXT[(n.id+((G.tod*2)|0))%SIT_TXT.length]; n.ovr=seat; routeTo(V,n,seat);
+}
 function weighPick(n,opts,rnd){                                      // the same weighing, but a sampled choice: strong favourites usually win, the others still happen now and then
   const t=n.tr||{}, thrift=.5+(10-(t.hu||5))*.04+(t.pi||5)*.02, us=opts.map(o=>(o.need||0)-(o.cost||0)*thrift+(o.pref||0)), mx=Math.max(...us), w=us.map(u=>Math.exp((u-mx)/.2)), tot=w.reduce((a,c)=>a+c,0);
   let x=rnd*tot; for(let i=0;i<opts.length;i++){ x-=w[i]; if(x<=0)return opts[i]; } return opts[opts.length-1];
@@ -5258,6 +5276,7 @@ function npcUpdate(V,n,dt){
   const hold=(n.chat&&G.whrs<n.chat.until)||n.busy;
   if(sid!==n.slot&&(n.st!=='walk'||n.tgtKeep)&&!hold&&!law)switchBlock(V,n,blk,sid);
   if(n.shopQ)shopQTick(V,n);
+  freeTime(V,n,dt);
   if(n.st==='walk'&&n.path){
     let wp=n.path[n.pi]; if(!wp){ n.st='idle'; n.moving=false; }
     else{
