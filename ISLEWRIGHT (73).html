@@ -1023,8 +1023,8 @@ function collectItems(){
   }
   for(const b of G.B){ const x0=b.x*TS, y0=b.y*TS, x1=x0+b.w*TS, y1=y0+b.h*TS; if(x1<vx0||x0>vx1||y1<vy0||y0>vy1)continue; items.push({k:1,o:b,y:BT[b.t].walk&&BT[b.t].k!=='fire'&&BT[b.t].k!=='bench'?y0:y1}); }
   for(const p of G.P){ const px=p.x*TS, py=p.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; items.push({k:2,o:p,y:py+1}); }
-  for(const V of G.vlist){ if(!V.active)continue; for(const n of V.npcs){ if(n.inside||n.hid)continue; const px=n.x*TS, py=n.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; items.push({k:6,o:n,y:py+1}); } }
-  if(G.pl)items.push({k:3,o:G.pl,y:G.pl.y*TS+1});
+  for(const V of G.vlist){ if(!V.active)continue; for(const n of V.npcs){ if(n.inside||n.hid)continue; const px=n.x*TS, py=n.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; let dy=py+1; if(n.sitB&&n.st!=='walk'){ const sb=G.bmap.get(n.sitB); if(sb)dy=(sb.y+1)*TS+2; } items.push({k:6,o:n,y:dy}); } }
+  if(G.pl){ let py3=G.pl.y*TS+1; if(G.pl.sitB){ const sb=G.bmap.get(G.pl.sitB); if(sb)py3=(sb.y+1)*TS+2; } items.push({k:3,o:G.pl,y:py3}); }
   if(G.camps)for(const cp of G.camps){ const px=cp.x*TS, py=cp.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; items.push({k:4,o:cp,y:py+12}); }
   if(G.bodies)for(const bd of G.bodies){ if(bd.in)continue; const px=bd.x*TS, py=bd.y*TS; if(px<vx0||px>vx1||py<vy0||py>vy1)continue; items.push({k:10,o:bd,y:py+(bd.carry?(bd.carry==='p'&&G.pl&&G.pl.dir>=3&&G.pl.dir<=5?-14:14):0)}); }
   if(G.sites)for(const S of G.sites){ const px=S.x*TS, py=S.y*TS; if(px<vx0-60||px>vx1+60||py<vy0-60||py>vy1+60)continue; items.push({k:12,o:S,y:py+8}); }
@@ -3896,7 +3896,7 @@ function findInteract(){
 function gain(id,n){ if(!canFit(id,n)){ toast('PACK FULL',RED); sfx.err(); return false; } addItem(id,n); toast('+'+n+' '+ITEMS[id].n,GRN); return true; }
 function markPicked(n){ const key=tk(n.x,n.y); G.picked.set(key,G.whrs); G.pcnt.set(key,(G.pcnt.get(key)||0)+1); }
 function benchStand(){ const P=G.pl, b=G.bmap.get(P.sitB); P.sitB=0; if(b){ P.x=b.x+.5; P.y=b.y+1.3; } }
-function benchSit(b){ const P=G.pl; if(P.carry||G.in)return; const occ=G.vlist.some(V=>V.npcs.some(n=>n.sitB===b.id&&n.sitSlot===0)), occ2=G.vlist.some(V=>V.npcs.some(n=>n.sitB===b.id&&n.sitSlot===1)); const sl=occ&&!occ2?1:0; P.sitB=b.id; P.x=b.x+.5+(sl?.22:-.22); P.y=b.y+1.12; P.dir=0; P.vx=P.vy=0; sfx.tick(); }
+function benchSit(b){ const P=G.pl; if(P.carry||G.in)return; const occ=G.vlist.some(V=>V.npcs.some(n=>n.sitB===b.id&&n.sitSlot===0)), occ2=G.vlist.some(V=>V.npcs.some(n=>n.sitB===b.id&&n.sitSlot===1)); const sl=occ&&!occ2?1:0; P.sitB=b.id; P.x=b.x+.5+(sl?.22:-.22); P.y=b.y+.68; P.dir=0; P.vx=P.vy=0; sfx.tick(); }
 function interact(){
   const it=G.near; if(!it)return; const o=it.o; if(it.k==='bench'){ if(it.sit)benchStand(); else benchSit(o); return; } if(it.k==='bodydrop'){ releaseBody(); return; } if(it.k==='wash'){ clStartWash(); return; } if(INK.has(it.k)){ interactX(it); return; }
   if(it.k==='node'){
@@ -4598,8 +4598,9 @@ function streetBeat(V,n){                                           // where a s
   const far=opts.filter(o=>Math.hypot(o.x-n.x,o.y-n.y)>6&&walkableTile(Math.floor(o.x),Math.floor(o.y)));
   return far.length?far[Math.floor(Math.random()*far.length)]:null;
 }
+function unsit(n){ if(n.sitB){ const b=G.bmap.get(n.sitB); if(b)n.y=b.y+1.15; n.sitB=0; } }          // stand up in front of the bench, never from inside it
 function npcGoTo(V,n,x,y,spd,chase){
-  n.sitB=0;                                  // returns true when it had to path around something
+  unsit(n);                                  // returns true when it had to path around something
   let pts, heavy=false; if(lineClear(n.x,n.y,x,y))pts=[{x:n.x,y:n.y},{x,y}];
   else{ heavy=true; const m=tilePathPts({x:n.x,y:n.y},{x,y}); pts=m?[{x:n.x,y:n.y}].concat(m,[{x,y}]):null;
     if(!pts){ const g=V.nodes.length?graphPath(V,n.x,n.y,x,y):[]; pts=fixPath([{x:n.x,y:n.y}].concat(g.map(q=>({x:q.x,y:q.y})),[{x,y}])); } }
@@ -4614,7 +4615,7 @@ function unstick(V,n){                                               // stuck on
   n.path=[{x:n.x,y:n.y}].concat(m,[fin]); n.pi=1; n.moving=false; n.bestD=1e9; n.bestT=T_;
 }
 function routeTo(V,n,dest){
-  n.sitB=0;
+  unsit(n);
   if(n._a&&G.in&&G.in.actors.indexOf(n._a)>=0&&n.inside===G.in.b.id){ const a=n._a; n.pend=dest; if(a.mode==='sleep'){ getUp(G.in,a); a.leave=0; } if(!a.leave){ a.leave=1; a.seatTo=null; a.go=null; if(a.mode==='sit'||a.mode==='keeper')a.mode='wander'; } return; }   // you are in the room: they walk to the door and leave through it
   const from=n.inside?doorOf(V,n.inside):{x:n.x,y:n.y};
   n.inside=null; n.hidden=false;
@@ -5164,7 +5165,7 @@ function benchSeatFor(V,n){                                           // the nea
 const SIT_TXT=['SITTING ON A BENCH, ENJOYING THE SUN','PEOPLE WATCHING FROM A BENCH','RESTING THEIR FEET ON A BENCH','FEEDING THE BIRDS FROM A BENCH','TAKING A BREATHER ON A BENCH','WATCHING THE TOWN GO BY'];
 function freeTime(V,n,dt){                                            // free time with nothing pressing: stay put, or weigh up a seat on a bench for a while
   n.ftT=(n.ftT||0)-dt; if(n.ftT>0)return; n.ftT=25+Math.random()*35;
-  if(n.sitB&&n.st!=='walk'){ if(G.whrs>=(n.sitUntil||0)){ n.sitB=0; n.ovr=null; n.slot=-9; } return; }
+  if(n.sitB&&n.st!=='walk'){ if(G.whrs>=(n.sitUntil||0)){ unsit(n); n.ovr=null; n.slot=-9; } return; }
   const blk=n.blk; if(!blk||!['relax','chores','yard','social','jobhunt'].includes(blk.k))return;
   if(n.st==='walk'||n.busy||n.talk||n.shopQ||n.shopping||n.sleeping||(n.chat&&G.whrs<n.chat.until)||n.hunt||(n.ovr&&n.ovrB===slotId(blk))||n.food<25)return;
   if(G.tod<8||G.tod>20)return; const seat=benchSeatFor(V,n); if(!seat)return;
@@ -5285,7 +5286,7 @@ function npcUpdate(V,n,dt){
         const fn=n.path[n.path.length-1], fd=fn?Math.hypot(fn.x-n.x,fn.y-n.y):0; if(fd<(n.bestD||1e9)-.4){ n.bestD=fd; n.bestT=T_; }
         if(mv<.12||T_-(n.bestT||T_)>6){ n.stuckN=(n.stuckN||0)+1; unstick(V,n); if(n.st!=='walk'||!n.path)return; wp=n.path[n.pi]||wp; dx=wp.x-n.x; dy=wp.y-n.y; d=Math.hypot(dx,dy); } else n.stuckN=0; }
       const sl=1;                                                   // people never slow down near the player
-      if(d<.2){ n.pi++; if(n.pi>=n.path.length){ n.moving=false; n.path=null; if(n.tgt&&n.tgt.inside&&shopBusy(V,n)){ } else if(n.tgt&&n.tgt.inside){ n.inside=n.tgt.inside; n.st='inside'; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); if(G.in&&G.in.b.id===n.inside&&!n._a)spawnArrival(G.in,n); } else{ if(n.tgt&&n.tgt.k==='bench'){ n.sitB=n.tgt.benchId; n.sitSlot=n.tgt.slot; } n.st='idle'; n.wait=2+Math.random()*5; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); } } }
+      if(d<.2){ n.pi++; if(n.pi>=n.path.length){ n.moving=false; n.path=null; if(n.tgt&&n.tgt.inside&&shopBusy(V,n)){ } else if(n.tgt&&n.tgt.inside){ n.inside=n.tgt.inside; n.st='inside'; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); if(G.in&&G.in.b.id===n.inside&&!n._a)spawnArrival(G.in,n); } else{ if(n.tgt&&n.tgt.k==='bench'){ const bb=G.bmap.get(n.tgt.benchId); if(bb){ n.sitB=bb.id; n.sitSlot=n.tgt.slot; n.x=bb.x+.5+(n.tgt.slot?.22:-.22); n.y=bb.y+.68; n.dir=0; } } n.st='idle'; n.wait=2+Math.random()*5; n.arrB=null; if(!n.chase)n.spd=1.15+(hash3(n.id,1,1)%50)/100; onArrive(V,n); arriveBusy(V,n); } } }
       else{ const sp=n.spd*sl*dt*wetSlow(n); const m=Math.min(d,sp), ux=dx/d, uy=dy/d; let nx=n.x+ux*m, ny=n.y+uy*m, wall=false;
         if(walkableTile(Math.floor(n.x),Math.floor(n.y))&&!walkableTile(Math.floor(nx),Math.floor(ny))){       // never walk into a house, the law house or any wall
           if(walkableTile(Math.floor(nx),Math.floor(n.y))){ ny=n.y; } else if(walkableTile(Math.floor(n.x),Math.floor(ny))){ nx=n.x; }
